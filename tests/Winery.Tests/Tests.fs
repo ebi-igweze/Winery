@@ -1,4 +1,4 @@
-module Tests
+module Tests.Http
 
 open System
 open System.IO

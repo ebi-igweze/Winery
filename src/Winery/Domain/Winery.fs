@@ -8,21 +8,23 @@ type ExistingWine =
       name: string
       description: string
       year: int 
+      price: float
       categoryID: Guid }
 
 type NewWine = 
     { name: string
       description: string
       year: int
+      price: float
       categoryID: Guid }
 
 type EditWine = 
     { name: string option
       description: string option
       year: int option 
+      price: float option
       categoryID: Guid option }
 
-// type Wine = New of NewWine | Existing of ExistingWine
 
 type ExistingCategory = 
     { id: Guid
@@ -38,13 +40,11 @@ type EditCategory =
     { name: string option
       description: string option }
 
-// type Category = New of NewCategory | Existing of ExistingCategory
-
 type Operation<'T,'U> = 'T -> Result<'U,string>
 
 type GuidOrString = Guid of Guid | String of string
 
-let unableTo performAction = sprintf "Unable to %s at the moment, please try again later." performAction
+let private unableTo performAction = sprintf "Unable to %s at the moment, please try again later." performAction
 
 let private notNull value = isNull value |> not 
 let private notEmptyString value = String.Empty <> value
@@ -67,7 +67,7 @@ let private validName =
             Ok
             >> composeError notNull "Name is required but not provided" 
             >> composeError notEmptyString "Name cannot be empty"
-            >> composeError (maxStringLength 10) "Name cannot be more than 10 characters"
+            >> composeError (maxStringLength 20) "Name cannot be more than 10 characters"
         validate name
 
 let private validDescription =
@@ -100,7 +100,7 @@ let private isValidCategoryInfo : Operation<NewCategory, NewCategory> =
         let validateInfo = 
             Ok
             >> Result.bind (fun (c:NewCategory) -> validND (c.name, c.description))
-            >> fun _ -> Ok category
+            >> Result.map (fun _ -> category)
         validateInfo category
 
 let private isNotExistingCategory (getCategory: string -> ExistingCategory option) : Operation<NewCategory, NewCategory> =

@@ -22,6 +22,8 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="Helpers.fs" />
+    <Compile Include="Core.Tests.fs" />
     <Compile Include="Tests.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
