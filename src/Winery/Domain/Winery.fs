@@ -25,7 +25,6 @@ type EditWine =
       price: float option
       categoryID: Guid option }
 
-
 type ExistingCategory = 
     { id: Guid
       name: string
@@ -40,43 +39,50 @@ type EditCategory =
     { name: string option
       description: string option }
 
+type Inventory =
+    { id: Guid
+      quantity: uint16
+      product: ExistingWine }
+
+type Order =
+    { id: Guid
+      product: ExistingWine
+      quantity: uint16 }
+
 type Operation<'T,'U> = 'T -> Result<'U,string>
 
 type GuidOrString = Guid of Guid | String of string
 
 let private unableTo performAction = sprintf "Unable to %s at the moment, please try again later." performAction
+ 
+let private isEmptyString value = String.Empty <> value || " " = value
+let private isMaxStringLength length value = String.length value <= length
+let private isEqual (value1, value2) = value1 = value2
 
-let private notNull value = isNull value |> not 
-let private notEmptyString value = String.Empty <> value
-let private maxStringLength length value = String.length value < length
-let private notEqual (value1, value2) = value1 <> value2
-
-let private composeError func (errorMsg: string) = 
+let private errorIf func (errorMsg: string) = 
     fun result -> 
-        match result with
-        | Error _ -> result
-        | Ok arg -> 
+        result |> Result.bind (fun arg ->
             if func arg 
-            then Ok arg
-            else Error errorMsg
+            then Error errorMsg
+            else Ok arg )
 
 
 let private validName =
     fun name ->
         let validate = 
             Ok
-            >> composeError notNull "Name is required but not provided" 
-            >> composeError notEmptyString "Name cannot be empty"
-            >> composeError (maxStringLength 20) "Name cannot be more than 10 characters"
+            >> errorIf isNull "Name is required but not provided" 
+            >> errorIf isEmptyString "Name cannot be empty"
+            >> errorIf (isMaxStringLength 20) "Name cannot be more than 10 characters"
         validate name
 
 let private validDescription =
     fun description ->
         let validate = 
             Ok
-            >> composeError notNull "Description is required but not provided"
-            >> composeError notEmptyString "Description cannot be empty"
-            >> composeError (maxStringLength 124) "Description name cannot be more than 124 characters"
+            >> errorIf isNull "Description is required but not provided"
+            >> errorIf isEmptyString "Description cannot be empty"
+            >> errorIf (isMaxStringLength 124) "Description name cannot be more than 124 characters"
         validate description
 
 let private validND =
@@ -86,11 +92,9 @@ let private validND =
             >> Result.bind (fun _ -> validName name)
             >> Result.bind (fun _ -> validDescription desc)
             >> Result.bind (fun _ -> Ok (name,desc))
-            >> composeError notEqual "Name and Description cannot be the same"
+            >> errorIf isEqual "Name and Description cannot be the same"
         validate ()
     
-
-
 ///////////////////////////////////////////////////
 //// Operations For Wine Category  
 ///////////////////////////////////////////////////
@@ -175,7 +179,7 @@ let updateCategory (getCategory: GuidOrString -> ExistingCategory option) (updat
 //// Operations For Wine
 //////////////////////////////////////////////////         
 
-let private isValidYear = composeError (fun y -> y > 1240) "Year cannot be less than 1250"
+let private isValidYear = errorIf (fun y -> y > 1240) "Year cannot be less than 1250"
 
 let private isNotExistingWine (getCategory: string -> ExistingWine option): Operation<NewWine, NewWine> =
     fun (newWine: NewWine) -> 
@@ -239,7 +243,7 @@ let updateWine getWine getCategory updateWine: Operation<Guid * EditWine, unit> 
             match editWine with
             | {name=None} -> Ok editWine
             | {name=Some editName} -> 
-                match (String >> getCategory) editName with
+                match (String >> getWine) editName with
                 | Some v when v.id <> id -> Error (sprintf "A category with this name '%s' already exists" editName)
                 | _ -> Ok editWine
 
@@ -261,3 +265,27 @@ let updateWine getWine getCategory updateWine: Operation<Guid * EditWine, unit> 
                 | None -> Error (unableTo "update wine"))        
         update editWine
         
+
+/////////////////////////////////////////////////
+//// Operations For Inventory
+//////////////////////////////////////////////////
+let private changeQuantity (setQuantity: Guid * uint16 -> _ option): Operation<Guid * uint16, unit> = 
+    fun (wineId, quantity) ->
+        let change (id, q) = 
+            match setQuantity (id, q) with
+            | Some _ -> Ok ()
+            | None -> Error (unableTo "update wine quantity")
+        change (wineId, quantity)
+
+
+let updateQuantity getWine setQuantity: Operation<Guid * uint16, unit> =
+    fun (wineId, quantity) ->
+        let update = 
+            Ok
+            >> Result.bind (isExistingWineWithId getWine)
+            >> Result.map (fun wine -> (wine.id, quantity))
+            >> Result.bind (changeQuantity setQuantity)
+        update wineId
+
+
+    
