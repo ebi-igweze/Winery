@@ -1,3 +1,4 @@
+[<AutoOpen>]
 module Winery.User
 open System
 
@@ -57,12 +58,11 @@ let systemError s = s |> (SystemError >> Error)
 ///////////////////////////////////////////////////
 
 let private isExistingCartItem (getCart: UserID -> Cart option): UserOperation<UserID * ItemID, CartItem> =
-    fun (userAndItemID: UserID * ItemID) -> 
-        let (userId, ItemID itemId) = userAndItemID
+    fun (userId, ItemID itemId) -> 
         match getCart userId with
         | None -> invalidUserOp "No Cart has been created for user yet"
         | Some c -> 
-            let cartItem = c.items |> Seq.tryFind (fun i -> i.id = itemId)
+            let cartItem = c.items |> Seq.tryFind (fun i -> i.id = itemId || i.product.id = itemId)
             match cartItem with
             | None -> invalidUserOp "This item does not exist in cart"
             | Some item ->  Ok item
@@ -72,8 +72,8 @@ let updateItemQuantityInCart getCart (updateCart: CartAction -> _ option): UserO
         let updateQuantity = 
             Ok
             >> Result.bind (isExistingCartItem getCart)
-            >> Result.bind (fun _ -> Ok (userId, itemId, quantity))
-            >> Result.bind (fun update ->
+            >> Result.bind (fun _ -> 
+                let update = (userId, itemId, quantity)
                 match update |> (UpdateQuantity >> updateCart) with
                 | None ->  systemError (unableTo "update item quantity") 
                 | Some _ -> Ok ())
@@ -170,7 +170,7 @@ let addWineWith getCategory getWine addWine: UserOperation<User * NewWine, WineI
                 | Ok v -> Ok v ) 
         addWith user
 
-let removeWineith getWine deleteWine: UserOperation<User * WineID, unit> =
+let removeWineWith getWine deleteWine: UserOperation<User * WineID, unit> =
     fun (user, wineID) ->
         let removeWith = 
             Ok

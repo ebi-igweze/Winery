@@ -25,6 +25,7 @@
     <Compile Include="StubsMocks.fs" />
     <Compile Include="Helpers.fs" />
     <Compile Include="ValidateInput.fs" />
+    <Compile Include="ValidateCommand.fs" />
     <Compile Include="Tests.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>

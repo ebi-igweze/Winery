@@ -9,6 +9,7 @@ type ExistingWine =
       description: string
       year: int 
       price: decimal
+      imagePath: string
       categoryID: Guid }
 
 type NewWine = 
@@ -16,6 +17,7 @@ type NewWine =
       description: string
       year: int
       price: decimal
+      imagePath: string
       categoryID: Guid }
 
 type EditWine = 
@@ -23,6 +25,7 @@ type EditWine =
       description: string option
       year: int option 
       price: decimal option
+      imagePath: string option
       categoryID: Guid option }
 
 type ExistingCategory = 
@@ -182,7 +185,7 @@ let updateWineCategory (getCategory: IDorName<CategoryID, CategoryName> -> Exist
 //// Operations For Wine
 //////////////////////////////////////////////////         
 
-let private isValidYear = errorIf (fun y -> y < 1240) "Year cannot be less than 1250"
+let private isValidYear = errorIf (fun y -> y < 1240 || y > DateTime.Now.Year) "Year cannot be less than 1240 or greater than current year"
 
 let private isNotExistingWine (getCategory: WineName -> ExistingWine option): Operation<NewWine, NewWine> =
     fun (newWine: NewWine) -> 
@@ -287,13 +290,14 @@ let updateWine (getWine: IDorName<WineID, WineName> -> ExistingWine option) getC
     fun (id, editWine) ->
         let update =
             Ok
-            >> Result.bind validWineUpdateInfo
+            >> Result.bind (isExistingWineWithId (getWine << ID))
+            >> Result.bind (fun _ -> validWineUpdateInfo editWine)
             >> Result.bind (fun ew -> notExistingWineName (id, ew))
             >> Result.bind (fun ew -> 
                 match updateWine (id,ew) with 
                 | Some _ -> Ok ()
                 | None -> Error (unableTo "update wine"))        
-        update editWine
+        update id
         
 
 /////////////////////////////////////////////////

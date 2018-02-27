@@ -12,9 +12,9 @@ let assertFailf format args =
     let msg = sprintf format args
     Assert.True(false, msg)
 
-let assertPass msg = Assert.True(true, msg)
+let private assertPass msg = Assert.True(true, msg)
 
-let assertPassf format args =
+let private assertPassf format args =
     let msg = sprintf format args
     Assert.True(true, msg)
 
