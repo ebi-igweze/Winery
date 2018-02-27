@@ -8,21 +8,21 @@ type ExistingWine =
       name: string
       description: string
       year: int 
-      price: float
+      price: decimal
       categoryID: Guid }
 
 type NewWine = 
     { name: string
       description: string
       year: int
-      price: float
+      price: decimal
       categoryID: Guid }
 
 type EditWine = 
     { name: string option
       description: string option
       year: int option 
-      price: float option
+      price: decimal option
       categoryID: Guid option }
 
 type ExistingCategory = 
@@ -39,6 +39,11 @@ type EditCategory =
     { name: string option
       description: string option }
 
+type WineID = WineID of Guid
+type WineName = WineName of string
+type CategoryID = CategoryID of Guid
+type CategoryName = CategoryName of string
+
 type Inventory =
     { id: Guid
       quantity: uint16
@@ -50,22 +55,20 @@ type Order =
       quantity: uint16 }
 
 type Operation<'T,'U> = 'T -> Result<'U,string>
+type IDorName<'T, 'U> = ID of 'T | Name of 'U
 
-type GuidOrString = Guid of Guid | String of string
-
-let private unableTo performAction = sprintf "Unable to %s at the moment, please try again later." performAction
+let unableTo performAction = sprintf "Unable to %s at the moment, please try again later." performAction
  
-let private isEmptyString value = String.Empty <> value || " " = value
-let private isMaxStringLength length value = String.length value <= length
+let private isEmptyString value = String.Empty = value || " " = value
+let private isMaxStringLength length value = String.length value > length
 let private isEqual (value1, value2) = value1 = value2
 
-let private errorIf func (errorMsg: string) = 
+let errorIf func errorMsg = 
     fun result -> 
         result |> Result.bind (fun arg ->
             if func arg 
             then Error errorMsg
             else Ok arg )
-
 
 let private validName =
     fun name ->
@@ -73,7 +76,7 @@ let private validName =
             Ok
             >> errorIf isNull "Name is required but not provided" 
             >> errorIf isEmptyString "Name cannot be empty"
-            >> errorIf (isMaxStringLength 20) "Name cannot be more than 10 characters"
+            >> errorIf (isMaxStringLength 20) "Name cannot be more than 20 characters"
         validate name
 
 let private validDescription =
@@ -107,32 +110,32 @@ let private isValidCategoryInfo : Operation<NewCategory, NewCategory> =
             >> Result.map (fun _ -> category)
         validateInfo category
 
-let private isNotExistingCategory (getCategory: string -> ExistingCategory option) : Operation<NewCategory, NewCategory> =
+let private isNotExistingCategory (getCategory: CategoryName -> ExistingCategory option) : Operation<NewCategory, NewCategory> =
     fun (category : NewCategory) -> 
-        match getCategory category.name with
+        match (getCategory << CategoryName) category.name with
         | Some _ -> Error (sprintf "A category with name '%s' already exists" category.name)
         | None   -> Ok category
 
-let isExistingCategoryWithId (getCategory: Guid -> ExistingCategory option): Operation<Guid, ExistingCategory> =
-    fun (categoryId: Guid) -> 
+let private isExistingCategoryWithId (getCategory: CategoryID -> ExistingCategory option): Operation<CategoryID, ExistingCategory> =
+    fun (categoryId: CategoryID) -> 
         match getCategory categoryId with
         | None -> Error (sprintf "Category with id '%O' does not exist" categoryId)
         | Some category -> Ok category 
 
-let createWineCategory (getCategory: string -> ExistingCategory option) (addCategory: Guid * NewCategory -> _ option): Operation<NewCategory, Guid> = 
+let createWineCategory getCategory (addCategory: CategoryID * NewCategory -> _ option): Operation<NewCategory, CategoryID> = 
     fun (newCategory: NewCategory) -> 
         let create = 
             isValidCategoryInfo 
             >> Result.bind (isNotExistingCategory getCategory)
-            >> Result.bind (fun category -> Ok (Guid.NewGuid(), category))
-            >> Result.bind (fun (id, c) -> 
-                match addCategory (id, c) with
-                | Some _ -> Ok id
+            >> Result.bind (fun category -> 
+                let catId = CategoryID (Guid.NewGuid())
+                match addCategory (catId, category) with
+                | Some _ -> Ok catId
                 | None -> Error (unableTo "add new category") )
         create newCategory
 
-let deleteCategory (getCategory: Guid -> ExistingCategory option) (deleteCategory: Guid -> _ option): Operation<Guid, unit> =
-    fun (categoryId: Guid) ->
+let deleteWineCategory getCategory (deleteCategory: CategoryID -> _ option): Operation<CategoryID, unit> =
+    fun (categoryId: CategoryID) ->
         let delete = 
             Ok
             >> Result.bind (isExistingCategoryWithId getCategory)
@@ -143,7 +146,7 @@ let deleteCategory (getCategory: Guid -> ExistingCategory option) (deleteCategor
         delete categoryId
 
             
-let updateCategory (getCategory: GuidOrString -> ExistingCategory option) (updateCategory: EditCategory -> _ option ): Operation<Guid * EditCategory, unit> =
+let updateWineCategory (getCategory: IDorName<CategoryID, CategoryName> -> ExistingCategory option) (updateCategory: EditCategory -> _ option ): Operation<CategoryID * EditCategory, unit> =
     
     let validCategoryUpdateInfo: Operation<EditCategory, EditCategory> =
         fun (editCategory: EditCategory) ->
@@ -153,21 +156,21 @@ let updateCategory (getCategory: GuidOrString -> ExistingCategory option) (updat
             | {description=(Some d)} -> validDescription d |> Result.map (fun _ -> editCategory)
             | _ -> Error "Nothing to update"
 
-    let notExistingCategoryName: Operation<Guid * EditCategory, EditCategory> =
-        fun (id: Guid, editCategory: EditCategory) ->
+    let notExistingCategoryName: Operation<CategoryID * EditCategory, EditCategory> =
+        fun (CategoryID id, editCategory: EditCategory) ->
             match editCategory with
             | {name=None} -> Ok editCategory
             | {name=Some editName} -> 
-                match (String >> getCategory) editName with
+                match (getCategory << Name << CategoryName) editName with
                 | Some c when c.id <> id -> Error (sprintf "A category with this name '%s' already exists" editName)
                 | _ -> Ok editCategory
 
     fun (categoryId, editCategory) -> 
         let update =
             Ok
-            >> Result.bind (isExistingCategoryWithId (Guid >> getCategory))
+            >> Result.bind (isExistingCategoryWithId (ID >> getCategory))
             >> Result.bind (fun _ -> validCategoryUpdateInfo editCategory )
-            >> Result.bind (fun ec -> notExistingCategoryName (categoryId, ec))
+            >> Result.bind (fun editC -> notExistingCategoryName (categoryId, editC))
             >> Result.bind (fun c ->
                 match updateCategory c with
                 | None -> Error (unableTo "update category")
@@ -179,37 +182,37 @@ let updateCategory (getCategory: GuidOrString -> ExistingCategory option) (updat
 //// Operations For Wine
 //////////////////////////////////////////////////         
 
-let private isValidYear = errorIf (fun y -> y > 1240) "Year cannot be less than 1250"
+let private isValidYear = errorIf (fun y -> y < 1240) "Year cannot be less than 1250"
 
-let private isNotExistingWine (getCategory: string -> ExistingWine option): Operation<NewWine, NewWine> =
+let private isNotExistingWine (getCategory: WineName -> ExistingWine option): Operation<NewWine, NewWine> =
     fun (newWine: NewWine) -> 
-        match getCategory newWine.name with
+        match (getCategory << WineName) newWine.name with
         | None -> Ok newWine
         | Some _ -> Error (sprintf "A wine with the name '%s' already Exists" newWine.name)
 
-let private isExistingWineWithId (getWine: Guid -> ExistingWine option): Operation<Guid, ExistingWine> =
-    fun (id: Guid) ->
-        match getWine id with
+let private isExistingWineWithId (getWine: WineID -> ExistingWine option): Operation<WineID, ExistingWine> =
+    fun (wineId) ->
+        match getWine wineId with
         | Some wine -> Ok wine
-        | None -> Error (sprintf "A wine with this %O does not exist" id)
+        | None -> Error (sprintf "A wine with this %O does not exist" wineId)
 
-let createWine getCategory getWine (addWine: (Guid * NewWine) -> _ option): Operation<NewWine, Guid> =
+let createWine getCategory getWine (addWine: (WineID * NewWine) -> _ option): Operation<NewWine, WineID> =
     fun (newWine: NewWine) ->
         let add = 
             Ok
             >> Result.bind (isNotExistingWine getWine)
-            >> Result.bind (fun _ -> isExistingCategoryWithId getCategory newWine.categoryID)
+            >> Result.bind (fun _ -> isExistingCategoryWithId getCategory (CategoryID newWine.categoryID))
             >> Result.bind (fun _ -> validND (newWine.name, newWine.description))
-            >> Result.bind (fun _ ->  (Ok newWine.year))
+            >> Result.bind (fun _ -> isValidYear (Ok newWine.year))
             >> Result.bind (fun _ ->
-                let id = Guid.NewGuid()
-                match addWine (id, newWine) with
+                let wineId = WineID (Guid.NewGuid())
+                match addWine (wineId, newWine) with
                 | None -> Error (unableTo "add new wine")
-                | Some _ -> Ok id )
+                | Some _ -> Ok wineId )
         add newWine
 
-let deleteWine getWine (deleteWine: Guid -> _ option) : Operation<Guid, unit> =
-    fun (id: Guid) -> 
+let deleteWine getWine (deleteWine: WineID -> _ option) : Operation<WineID, unit> =
+    fun (id: WineID) -> 
         let delete =
             Ok
             >> Result.bind (isExistingWineWithId getWine)
@@ -219,31 +222,65 @@ let deleteWine getWine (deleteWine: Guid -> _ option) : Operation<Guid, unit> =
                 | Some _ -> Ok () )
         delete id
 
-let updateWine getWine getCategory updateWine: Operation<Guid * EditWine, unit> =
+let updateWine (getWine: IDorName<WineID, WineName> -> ExistingWine option) getCategory updateWine: Operation<WineID * EditWine, unit> =
+    let validWineUpdateInfo: Operation<EditWine, EditWine> = 
+        let checkYear (editWine: EditWine) =
+            match editWine with
+            | {year=Some y} -> 
+                Ok y
+                |> isValidYear  
+                |> Result.bind (fun _ -> Ok editWine)
+            | _ -> Ok editWine
 
-    let validWineUpdateInfo: Operation<EditWine, EditWine> =
+        let checkDescription (editWine: EditWine)  =
+            match editWine with
+            | {description=Some d} ->
+                Ok d
+                |> Result.bind validDescription
+                |> Result.bind (fun _ -> Ok editWine)
+            | _ -> Ok editWine
+
+        let checkName (editWine: EditWine) =
+            match editWine with
+            | {name=Some n} -> 
+                Ok n 
+                |> Result.bind validName
+                |> Result.bind (fun _ -> Ok editWine)
+            | _ -> Ok editWine
+
+        let checkNameDescription (editWine: EditWine) =
+            match editWine with
+            | {name=Some n; description=Some d} ->
+                Ok (n,d)
+                |> Result.bind validND
+                |> Result.bind (fun _ -> Ok editWine)
+            | _ -> Ok editWine
+
+        let checkCategory (editWine: EditWine) =
+            match editWine with
+            | {categoryID=Some id} -> 
+                (CategoryID id)
+                |> isExistingCategoryWithId getCategory 
+                |> Result.bind (fun _ -> Ok editWine)
+            | _ -> Ok editWine
+
         fun (editWine: EditWine) ->
             match editWine with
-            | {name=(Some n); description=(Some d); year=y} ->
-                validND (n,d)
-                |> Result.bind (fun _ -> y |> function None -> Ok 0 | Some year -> isValidYear (Ok year)) 
-                |> Result.map (fun _ -> editWine)            
-            | {name=(Some n); year=y} -> 
-                validName n 
-                |> Result.bind (fun _ -> y |> function None -> Ok 0| Some year -> isValidYear (Ok year))
-                |> Result.map (fun _ -> editWine)
-            | {description=(Some d); year=y} -> 
-                validDescription d 
-                |> Result.bind (fun _ -> y |> function None -> Ok 0 | Some year -> isValidYear (Ok year))
-                |> Result.map (fun _ -> editWine)
-            | _ -> Error "Nothing to update"
+            | {name=None; description=None; year=None; categoryID=None} -> Error "No to update"
+            | _ -> 
+                editWine 
+                |> checkName 
+                |> Result.bind checkYear
+                |> Result.bind checkCategory
+                |> Result.bind checkDescription 
+                |> Result.bind checkNameDescription
 
-    let notExistingWineName: Operation<Guid * EditWine, EditWine> =
-        fun (id: Guid, editWine: EditWine) ->
+    let notExistingWineName: Operation<WineID * EditWine, EditWine> =
+        fun (WineID id, editWine: EditWine) ->
             match editWine with
             | {name=None} -> Ok editWine
             | {name=Some editName} -> 
-                match (String >> getWine) editName with
+                match (getWine << Name << WineName) editName with
                 | Some v when v.id <> id -> Error (sprintf "A category with this name '%s' already exists" editName)
                 | _ -> Ok editWine
 
@@ -252,13 +289,6 @@ let updateWine getWine getCategory updateWine: Operation<Guid * EditWine, unit> 
             Ok
             >> Result.bind validWineUpdateInfo
             >> Result.bind (fun ew -> notExistingWineName (id, ew))
-            >> Result.bind (fun ew -> 
-                match ew with
-                | {categoryID=Some id} -> 
-                    id
-                    |> isExistingCategoryWithId (Guid >> getCategory) 
-                    |> Result.bind (fun _ -> Ok ew)
-                | _ -> Ok ew )
             >> Result.bind (fun ew -> 
                 match updateWine (id,ew) with 
                 | Some _ -> Ok ()
@@ -269,7 +299,7 @@ let updateWine getWine getCategory updateWine: Operation<Guid * EditWine, unit> 
 /////////////////////////////////////////////////
 //// Operations For Inventory
 //////////////////////////////////////////////////
-let private changeQuantity (setQuantity: Guid * uint16 -> _ option): Operation<Guid * uint16, unit> = 
+let private changeQuantity (setQuantity: WineID * uint16 -> _ option): Operation<WineID * uint16, unit> = 
     fun (wineId, quantity) ->
         let change (id, q) = 
             match setQuantity (id, q) with
@@ -277,15 +307,10 @@ let private changeQuantity (setQuantity: Guid * uint16 -> _ option): Operation<G
             | None -> Error (unableTo "update wine quantity")
         change (wineId, quantity)
 
-
-let updateQuantity getWine setQuantity: Operation<Guid * uint16, unit> =
+let updateQuantity getWine setQuantity: Operation<WineID * uint16, unit> =
     fun (wineId, quantity) ->
         let update = 
             Ok
             >> Result.bind (isExistingWineWithId getWine)
-            >> Result.map (fun wine -> (wine.id, quantity))
-            >> Result.bind (changeQuantity setQuantity)
+            >> Result.bind (fun wine -> (WineID (wine.id), quantity) |> (changeQuantity setQuantity))
         update wineId
-
-
-    

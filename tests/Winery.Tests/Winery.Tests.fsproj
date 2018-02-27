@@ -22,8 +22,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="StubsMocks.fs" />
     <Compile Include="Helpers.fs" />
-    <Compile Include="Core.Tests.fs" />
+    <Compile Include="ValidateInput.fs" />
     <Compile Include="Tests.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
