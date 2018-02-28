@@ -1,6 +1,5 @@
 module Tests.CommandValidation
 
-open System
 open Winery
 open Xunit
 
@@ -81,7 +80,7 @@ module CustomerCommands =
             | UpdateQuantity _ -> updateCart ()
             |_ -> invalidOp "cannot call this method"
 
-        (UserID userID, WineID utilityID)
+        (UserID userID, WineID wineID)
         |> addItemToCart getCartWithItem getSomeWine actor
         |> shouldBeOk
 
