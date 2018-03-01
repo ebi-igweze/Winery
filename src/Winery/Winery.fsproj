@@ -25,6 +25,9 @@
     <Compile Include="Domain/Winery.fs" />
     <Compile Include="Domain/User.fs" />
     <Compile Include="Infrastructure/Storage/InMemory.fs" />
+    <Compile Include="Infrastructure/Http/Helpers.fs" />
+    <Compile Include="Infrastructure/Http/CategoryHandlers.fs" />
+    <Compile Include="Infrastructure/Http/WineHandlers.fs" />
     <Compile Include="Models.fs" />
     <Compile Include="HttpHandlers.fs" />
     <Compile Include="Program.fs" />

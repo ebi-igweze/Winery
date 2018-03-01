@@ -7,7 +7,7 @@ open Microsoft.AspNetCore.Hosting
 open Microsoft.Extensions.Logging
 open Microsoft.Extensions.DependencyInjection
 open Giraffe
-open Winery.HttpHandlers
+open Http.Categories
 
 // ---------------------------------
 // Web app
@@ -17,9 +17,10 @@ let webApp =
     choose [
         subRoute "/api"
             (choose [
-                GET >=> choose [
-                    route "/hello" >=> handleGetHello
-                ]
+                GET >=> (choose [
+                            route "categories" >=> getCategories
+                            // routeCif "categories"
+                        ])
             ])
         setStatusCode 404 >=> text "Not Found" ]
 
@@ -51,6 +52,7 @@ let configureApp (app : IApplicationBuilder) =
 
 let configureServices (services : IServiceCollection) =
     services.AddCors()    |> ignore
+    services.AddSingleton(Storage.InMemory.dataStore) |> ignore
     services.AddGiraffe() |> ignore
 
 let configureLogging (builder : ILoggingBuilder) =

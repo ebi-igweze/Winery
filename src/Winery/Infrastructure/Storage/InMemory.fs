@@ -5,6 +5,21 @@ open System.Collections.Generic
 open Winery
 open System
 
+type Storage = 
+    { getCategories: unit -> ExistingCategory list
+      getCategoryById: CategoryID -> ExistingCategory option
+      getCategoryByName: CategoryName -> ExistingCategory option
+      addCategory: CategoryID * NewCategory -> unit option
+      updateCategory: CategoryID * EditCategory -> unit option
+      deleteCategory: CategoryID -> unit option
+
+      getWines: unit -> ExistingWine list
+      getWineById: WineID -> ExistingWine option
+      getWineByName: WineName -> ExistingWine option
+      addWine: WineID * NewWine -> unit option
+      updateWine: WineID * EditWine -> unit option
+      deleteWine: WineID -> unit option }
+
 type Wine() =
     member val id = defaultof<Guid> with get, set
     member val name = "" with get, set
@@ -20,7 +35,7 @@ type Category() =
     member val description = "" with get, set
     member val wines = List<Wine>() with get, set
     
-type Storage = { categories:  List<Category> }
+type InMemoryStore = { categories:  List<Category> }
 
 /////////////////////////
 ////  Type Transforms
@@ -73,12 +88,14 @@ let queryWineByName =
         |> Seq.collect id
         |> Seq.tryFind (fun w -> w.name = name)
         
-let queryWineById =
-    fun (WineID wineId) -> 
+let queryWines = 
+    fun () ->
         storage.categories
-        |> Seq.map (fun c -> c.wines)
+        |> Seq.map(fun c -> c.wines)
         |> Seq.collect id
-        |> Seq.tryFind (fun w -> w.id = wineId)
+
+let queryWineById =
+    fun (WineID wineId) -> queryWines () |> Seq.tryFind (fun w -> w.id = wineId)
 
 /////////////////////////
 ////  Commands
@@ -95,6 +112,7 @@ let removeCategory =
         categoryId
         |> queryCategoryById
         |> Option.map storage.categories.Remove
+        |> Option.map ignore
 
 let updateCategory =
     let update (editCategory: EditCategory) (category: Category) =
@@ -123,6 +141,7 @@ let removeWine =
         wine.categoryId
         |> (queryCategoryById << CategoryID)
         |> Option.map (fun category -> category.wines.Remove wine)
+        |> Option.map ignore
 
     fun (wineId) ->
         wineId
@@ -131,6 +150,7 @@ let removeWine =
 
 let updateWine =
     let update = fun (editWine: EditWine) (wine: Wine) ->
+        // extremely ugly way
         if (editWine.name.IsSome) then wine.name <- editWine.name.Value
         if (editWine.description.IsSome) then wine.name <- editWine.name.Value
         if (editWine.price.IsSome) then wine.price <- editWine.price.Value
@@ -144,9 +164,11 @@ let updateWine =
 
 
 /////////////////////////
-////  Tests Stubs
+////  Query Stubs
 /////////////////////////
-let getCategoryByID = fun (categoryId) ->
+let getCategories = fun () -> storage.categories |> Seq.map categoryToExistingCategory |> Seq.toList
+
+let getCategoryById = fun (categoryId) ->
     categoryId |> (queryCategoryById >> Option.map categoryToExistingCategory)
 
 let getCategoryByName = fun (categoryName) ->
@@ -154,16 +176,35 @@ let getCategoryByName = fun (categoryName) ->
 
 let getCategoryByIDorName = fun (idOrName) ->
     idOrName |> function
-    | ID categoryId -> getCategoryByID categoryId  
+    | ID categoryId -> getCategoryById categoryId  
     | Name categoryName -> getCategoryByName categoryName
 
-let getWineByName = fun (wineName) ->
-    wineName  |> (queryWineByName >> Option.map wineToExistingWine)
+let getWines = fun () -> queryWines () |> Seq.map wineToExistingWine |> Seq.toList
 
-let getWineById = fun (wineId) ->
-    wineId |> (queryWineById >> Option.map wineToExistingWine)
+let getWineByName = fun (wineName) -> wineName  |> (queryWineByName >> Option.map wineToExistingWine)
+
+let getWineById = fun (wineId) -> wineId |> (queryWineById >> Option.map wineToExistingWine)
 
 let getWineByIdOrName = fun (idOrName) ->   
     idOrName |> function
     | ID wineId -> getWineById wineId
     | Name wineName -> getWineByName wineName
+
+
+/////////////////////////
+////  In Memory Store
+/////////////////////////
+let dataStore: Storage = 
+    { getCategoryById = getCategoryById
+      getCategoryByName = getCategoryByName
+      getCategories = getCategories 
+      addCategory = addCategory
+      updateCategory = updateCategory
+      deleteCategory = removeCategory
+
+      getWines = getWines
+      getWineById = getWineById
+      getWineByName = getWineByName
+      addWine = addWine
+      updateWine = updateWine
+      deleteWine = removeWine }
