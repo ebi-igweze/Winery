@@ -24,6 +24,7 @@
   <ItemGroup>
     <Compile Include="Domain/Winery.fs" />
     <Compile Include="Domain/User.fs" />
+    <Compile Include="Infrastructure/Storage/InMemory.fs" />
     <Compile Include="Models.fs" />
     <Compile Include="HttpHandlers.fs" />
     <Compile Include="Program.fs" />
