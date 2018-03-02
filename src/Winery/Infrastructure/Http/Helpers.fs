@@ -3,4 +3,4 @@ module Http.Helpers
 
 open Giraffe
 
-let notFound s = setStatusCode 404 >=> text s
+let notFound: HttpHandler = setStatusCode 404 >=> text "The requested resource was not found."

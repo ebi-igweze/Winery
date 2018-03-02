@@ -8,6 +8,8 @@ open Microsoft.Extensions.Logging
 open Microsoft.Extensions.DependencyInjection
 open Giraffe
 open Http.Categories
+open Http.Wines
+open Storage.InMemory
 
 // ---------------------------------
 // Web app
@@ -15,12 +17,10 @@ open Http.Categories
 
 let webApp =
     choose [
-        subRoute "/api"
+        subRouteCi "/api"
             (choose [
-                GET >=> (choose [
-                            route "categories" >=> getCategories
-                            // routeCif "categories"
-                        ])
+                categoryHttpHandlers
+                wineHttpHandlers
             ])
         setStatusCode 404 >=> text "Not Found" ]
 
@@ -51,9 +51,9 @@ let configureApp (app : IApplicationBuilder) =
         .UseGiraffe(webApp)
 
 let configureServices (services : IServiceCollection) =
-    services.AddCors()    |> ignore
-    services.AddSingleton(Storage.InMemory.dataStore) |> ignore
-    services.AddGiraffe() |> ignore
+    services.AddCors()                  |> ignore
+    services.AddGiraffe()               |> ignore
+    services.AddSingleton(dataStore)    |> ignore
 
 let configureLogging (builder : ILoggingBuilder) =
     let filter (l : LogLevel) = l.Equals LogLevel.Error

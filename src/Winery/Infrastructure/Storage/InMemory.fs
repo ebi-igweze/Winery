@@ -6,19 +6,22 @@ open Winery
 open System
 
 type Storage = 
-    { getCategories: unit -> ExistingCategory list
-      getCategoryById: CategoryID -> ExistingCategory option
-      getCategoryByName: CategoryName -> ExistingCategory option
-      addCategory: CategoryID * NewCategory -> unit option
-      updateCategory: CategoryID * EditCategory -> unit option
-      deleteCategory: CategoryID -> unit option
+    { getCategories             : unit -> ExistingCategory list
+      getCategoryById           : CategoryID -> ExistingCategory option
+      getCategoryByName         : CategoryName -> ExistingCategory option
+      addCategory               : CategoryID * NewCategory -> unit option
+      updateCategory            : CategoryID * EditCategory -> unit option
+      deleteCategory            : CategoryID -> unit option
 
-      getWines: unit -> ExistingWine list
-      getWineById: WineID -> ExistingWine option
-      getWineByName: WineName -> ExistingWine option
-      addWine: WineID * NewWine -> unit option
-      updateWine: WineID * EditWine -> unit option
-      deleteWine: WineID -> unit option }
+      getWines                  : unit -> ExistingWine list
+      getWineById               : WineID -> ExistingWine option
+      getWineByName             : WineName -> ExistingWine option
+      getWinesInCategory         : CategoryID -> ExistingWine list option
+      getWineInCategoryById     : CategoryID -> WineID -> ExistingWine option
+      getWineInCategoryByName   : CategoryID -> WineName -> ExistingWine option
+      addWine                   : WineID * NewWine -> unit option
+      updateWine                : WineID * EditWine -> unit option
+      deleteWine                : WineID -> unit option }
 
 type Wine() =
     member val id = defaultof<Guid> with get, set
@@ -88,14 +91,37 @@ let queryWineByName =
         |> Seq.collect id
         |> Seq.tryFind (fun w -> w.name = name)
         
-let queryWines = 
+let private queryWines = 
     fun () ->
         storage.categories
         |> Seq.map(fun c -> c.wines)
         |> Seq.collect id
 
-let queryWineById =
-    fun (WineID wineId) -> queryWines () |> Seq.tryFind (fun w -> w.id = wineId)
+let private queryWineById =
+    fun (WineID wineId) -> 
+        queryWines () |> Seq.tryFind (fun w -> w.id = wineId)
+        
+let private queryWinesInCategory =
+    fun (catId) ->
+        catId
+        |> queryCategoryById 
+        |> Option.map (fun categories -> categories.wines )
+
+let private queryWineInCategoryByCriteria categoryId criteria = 
+        categoryId
+        |> queryWinesInCategory 
+        |> function 
+            | None -> None
+            | Some wines ->  wines |> Seq.tryFind criteria
+
+let private queryWineInCategoryById = 
+    fun (catId) (WineID wineId) -> 
+        queryWineInCategoryByCriteria catId (fun w -> w.id = wineId)
+
+let private queryWineInCategoryByName = 
+    fun (catId) (WineName wineName) ->
+        queryWineInCategoryByCriteria catId (fun w -> w.name = wineName)
+
 
 /////////////////////////
 ////  Commands
@@ -185,6 +211,12 @@ let getWineByName = fun (wineName) -> wineName  |> (queryWineByName >> Option.ma
 
 let getWineById = fun (wineId) -> wineId |> (queryWineById >> Option.map wineToExistingWine)
 
+let getWinesInCategory = fun (catId) -> catId |> (queryWinesInCategory >> Option.map (Seq.map wineToExistingWine) >> Option.map List.ofSeq)
+
+let getWineInCategoryById = fun catId wineId -> (catId,wineId) ||> queryWineInCategoryById |> Option.map wineToExistingWine
+
+let getWineInCategoryByName = fun catId wineName -> (catId, wineName) ||> queryWineInCategoryByName |> Option.map wineToExistingWine
+
 let getWineByIdOrName = fun (idOrName) ->   
     idOrName |> function
     | ID wineId -> getWineById wineId
@@ -205,6 +237,9 @@ let dataStore: Storage =
       getWines = getWines
       getWineById = getWineById
       getWineByName = getWineByName
+      getWinesInCategory = getWinesInCategory
+      getWineInCategoryByName = getWineInCategoryByName
+      getWineInCategoryById = getWineInCategoryById
       addWine = addWine
       updateWine = updateWine
       deleteWine = removeWine }
