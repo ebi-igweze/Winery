@@ -1,9 +1,11 @@
 module Http.Wines
 
 open Storage.InMemory
-open Giraffe
 open Winery
 open Microsoft.AspNetCore.Http
+open Giraffe
+
+type RouteFormat<'a> = Printf.TextWriterFormat<'a> 
 
 let getWines categoryId: HttpHandler = 
     fun (next: HttpFunc) (ctx: HttpContext) ->
@@ -38,6 +40,24 @@ let getWineWithName (categoryStringId:string) =
                     | None -> notFound next ctx
         }
 
+let addNewWine (categoryStringId: string): HttpHandler = 
+    fun (next: HttpFunc) (ctx: HttpContext) -> 
+        task {
+            let! newWine = ctx.BindJsonAsync<NewWine>()
+            let categoryId = System.Guid categoryStringId
+            let store = ctx.GetService<Storage>()
+            return! match store.getCategoryById (CategoryID categoryId) with
+                    | None -> notFound next ctx
+                    | Some _ ->
+                        match (addWineWith store.getCategoryById store.getWineByName store.addWine <| (fakeAdmin, newWine)) with
+                        | Ok (WineID id) -> createdM (id.ToString("N"))  next ctx
+                        | Error (Unauthorized _) -> unauthorized next ctx
+                        | Error (InvalidOp m) -> badRequestM m next ctx
+                        | Error (SystemError m) -> serverError m next ctx
+        }
+
+
+
 let wineHttpHandlers: HttpHandler = 
     (choose [
         GET >=> choose [
@@ -45,4 +65,5 @@ let wineHttpHandlers: HttpHandler =
             routeCif "/categories/%s/wines/search" getWineWithName
             routeCif "/categories/%s/wines/%s" getWine
         ]
+        POST >=> routeCif "/categories/%s/wines" addNewWine
     ])

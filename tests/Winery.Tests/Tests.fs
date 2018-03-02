@@ -13,7 +13,6 @@ open Microsoft.Extensions.DependencyInjection
 // ---------------------------------
 // Helper functions (extend as you need)
 // ---------------------------------
-
 let createHost() =
     WebHostBuilder()
         .UseContentRoot(Directory.GetCurrentDirectory())
@@ -49,28 +48,33 @@ let shouldEqual expected actual =
 let shouldContain (expected : string) (actual : string) =
     Assert.True(actual.Contains expected)
 
+let shouldContainf (expected:string) (actual:string) =
+    let boole = expected.Equals actual
+    Assert.True(boole, actual)
 // ---------------------------------
 // Tests
 // ---------------------------------
 
-[<Fact>]
-let ``Route /api/hello returns "Hello world, from Giraffe!"`` () =
-    use server = new TestServer(createHost())
-    use client = server.CreateClient()
+// [<Fact>]
+// let ``Route /api/hello returns "Hello world, from Giraffe!"`` () =
+//     use server = new TestServer(createHost())
+//     use client = server.CreateClient()
 
-    client
-    |> httpGet "/api/hello"
-    |> ensureSuccess
-    |> readText
-    |> shouldContain "Hello world, from Giraffe!"
+//     client
+//     |> httpGet "/api/hello"
+//     |> ensureSuccess
+//     |> readText
+//     |> shouldContain "Hello world, from Giraffe!"
 
-[<Fact>]
-let ``Route which doesn't exist returns 404 Page not found`` () =
-    use server = new TestServer(createHost())
-    use client = server.CreateClient()
+// [<Fact>]
+// let ``Route which doesn't exist returns 404 Page not found`` () =
+//     use server = new TestServer(createHost())
+//     use client = server.CreateClient()
 
-    client
-    |> httpGet "/route/which/does/not/exist"
-    |> isStatus HttpStatusCode.NotFound
-    |> readText
-    |> shouldEqual "Not Found"
+//     client
+//     |> httpGet "/route/which/does/not/exist"
+//     |> isStatus HttpStatusCode.NotFound
+//     |> readText
+//     |> shouldEqual "Not Found"
+
+    
