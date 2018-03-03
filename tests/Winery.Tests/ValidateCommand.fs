@@ -6,12 +6,12 @@ open Xunit
 /////////////////////////////////////////
 ////  Tests for command validation   ////
 /////////////////////////////////////////
-type Command = { invoked: bool Ref }
+type Command = { mutable invoked: bool }
 
 let getCommand () = 
-    let result = {invoked=ref false}
+    let result = { invoked = false}
     let command _ =
-        result.invoked := true
+        result.invoked <- true
         Some ()
     (result,command)
 
@@ -23,17 +23,16 @@ module CustomerCommands =
     let ``Should *Return error and *Not-Invoke 'addCartItem' and 'updateCcart' when given a WineID that doesn't exist``() =
         let (updateAction, updateCart) = getCommand ()
         let (addAction, addToCart) = getCommand ()
-        let actor = fun (action: CartAction) -> 
-            match action with
+        let actor = function
             | AddItem _ -> addToCart ()
             | UpdateQuantity _ -> updateCart ()
-            |_ -> invalidOp "cannot call this method"
+            | _ -> invalidOp "cannot call this method"
 
         (UserID userID, WineID fakeID)
         |> addItemToCart getEmptyCart getNoWine actor
         |> shouldBeError
 
-        (not !addAction.invoked && not !updateAction.invoked)
+        (not addAction.invoked && not updateAction.invoked)
         |> shouldEqual true
 
     [<Fact>]
@@ -50,7 +49,7 @@ module CustomerCommands =
         |> addItemToCart getEmptyCart getSomeWine actor
         |> shouldBeOk
 
-        (!addAction.invoked && not !updateAction.invoked)
+        (addAction.invoked && not updateAction.invoked)
         |> shouldEqual true
 
     [<Fact>]
@@ -67,7 +66,7 @@ module CustomerCommands =
         |> addItemToCart getNoCart getSomeWine actor
         |> shouldBeOk
 
-        (!addAction.invoked && not !updateAction.invoked)
+        (addAction.invoked && not updateAction.invoked)
         |> shouldEqual true
 
     [<Fact>]
@@ -84,7 +83,7 @@ module CustomerCommands =
         |> addItemToCart getCartWithItem getSomeWine actor
         |> shouldBeOk
 
-        (!updateAction.invoked && not !addAction.invoked)
+        (updateAction.invoked && not addAction.invoked)
         |> shouldEqual true
 
     ///////////////////////////////////////
@@ -102,7 +101,7 @@ module CustomerCommands =
         |> updateItemQuantityInCart getNoCart actor
         |> shouldBeError
 
-        (not !updateAction.invoked) |> shouldEqual true  
+        (not updateAction.invoked) |> shouldEqual true  
 
     [<Fact>]
     let ``Should *Return error and *Not-Invoke 'UpdateCart' when given an item that is not in cart``() =
@@ -116,7 +115,7 @@ module CustomerCommands =
         |> updateItemQuantityInCart getCartWithItem actor
         |> shouldBeError
 
-        (not !updateAction.invoked) |> shouldEqual true  
+        (not updateAction.invoked) |> shouldEqual true  
 
     [<Fact>]
     let ``Should *Return sucess and *Invoke 'UpdateCart' when given an item that is in cart``() =
@@ -130,7 +129,7 @@ module CustomerCommands =
         |> updateItemQuantityInCart getCartWithItem actor
         |> shouldBeOk
 
-        (!updateAction.invoked) |> shouldEqual true  
+        (updateAction.invoked) |> shouldEqual true  
 
 
     ///////////////////////////////////////
@@ -148,7 +147,7 @@ module CustomerCommands =
         |> removeItemFromCart getNoCart actor
         |> shouldBeError
 
-        (not !deleteAction.invoked) |> shouldEqual true  
+        (not deleteAction.invoked) |> shouldEqual true  
 
     [<Fact>]
     let ``Should *Return error and *Not-Invoke 'RemoveCartItem' when given an item that is not in cart``() =
@@ -162,7 +161,7 @@ module CustomerCommands =
         |> removeItemFromCart getCartWithItem actor
         |> shouldBeError
 
-        (not !deleteAction.invoked) |> shouldEqual true  
+        (not deleteAction.invoked) |> shouldEqual true  
 
     [<Fact>]
     let ``Should *Return sucess and *Invoke 'RemoveCartItem' when given an item that is in cart``() =
@@ -176,7 +175,7 @@ module CustomerCommands =
         |> removeItemFromCart getCartWithItem actor
         |> shouldBeOk
 
-        (!deleteAction.invoked) |> shouldEqual true  
+        (deleteAction.invoked) |> shouldEqual true  
         
 
     ////////////////////////////////////////////
@@ -190,7 +189,7 @@ module CustomerCommands =
         |> placeOrder getNoCart checkout
         |> shouldBeError
 
-        not !checkoutAction.invoked |> shouldEqual true
+        not checkoutAction.invoked |> shouldEqual true
 
     [<Fact>]
     let ``Should *Return error and *Not-Invoke 'placeOrder' when given an empty cart``() =
@@ -200,7 +199,7 @@ module CustomerCommands =
         |> placeOrder getEmptyCart checkout
         |> shouldBeError
 
-        not !checkoutAction.invoked |> shouldEqual true
+        not checkoutAction.invoked |> shouldEqual true
 
     [<Fact>]
     let ``Should *Return success and *Invoke 'placeOrder' when given a cart containing items``() =
@@ -210,7 +209,7 @@ module CustomerCommands =
         |> placeOrder getCartWithItem checkout
         |> shouldBeOk
 
-        !checkoutAction.invoked |> shouldEqual true
+        checkoutAction.invoked |> shouldEqual true
 
 module AdminCommands =
     let admin = {User.id=userID; firstName=""; lastName=""; email=""; role=Administrator}
@@ -228,7 +227,7 @@ module AdminCommands =
         |> addCategoryWith getSomeCategory addCategory 
         |> shouldBeError
 
-        not !addCommand.invoked |> shouldEqual true
+        not addCommand.invoked |> shouldEqual true
 
     [<Fact>]
     let ``Should *Return error and *Not-Invoke 'addCategory' when given an exiting category name``() =
@@ -239,7 +238,7 @@ module AdminCommands =
         |> addCategoryWith getSomeCategory addCategory
         |> shouldBeError
 
-        not !addCommand.invoked |> shouldEqual true
+        not addCommand.invoked |> shouldEqual true
        
     [<Fact>]
     let ``Should *Return success and *Invoke 'addCategory' when given an authorized user and valid new category``() =
@@ -250,7 +249,7 @@ module AdminCommands =
         |> addCategoryWith getNoCategory addCategory
         |> shouldBeOk
 
-        !addCommand.invoked |> shouldEqual true
+        addCommand.invoked |> shouldEqual true
          
     ////////////////////////////////////////////
     ////  Tests for 'DeleteWineCategory'   /////
@@ -263,7 +262,7 @@ module AdminCommands =
         |> removeCategoryWith getNoCategory deleteCategory
         |> shouldBeError
 
-        not !deleteCommand.invoked |> shouldEqual true
+        not deleteCommand.invoked |> shouldEqual true
         
     [<Fact>]
     let ``Should *Return error and *Not-Invoke 'DeleteCategory' when given an unauthorized user``() =
@@ -273,7 +272,7 @@ module AdminCommands =
         |> removeCategoryWith getNoCategory deleteCategory
         |> shouldBeError
 
-        not !deleteCommand.invoked |> shouldEqual true
+        not deleteCommand.invoked |> shouldEqual true
 
     [<Fact>]
     let ``Should *Return success and *Invoke 'DeleteCategory' when given an authorized user and id for an existing category``() =
@@ -283,7 +282,7 @@ module AdminCommands =
         |> removeCategoryWith getSomeCategory deleteCategory
         |> shouldBeOk
 
-        !deleteCommand.invoked |> shouldEqual true
+        deleteCommand.invoked |> shouldEqual true
 
     ////////////////////////////////////////////
     ////  Tests for 'UpdateWineCategory'   /////
@@ -297,7 +296,7 @@ module AdminCommands =
         |> editCategoryWith getSomeCategory updateCategory
         |> shouldBeError
 
-        not !updateCommand.invoked |> shouldEqual true
+        not updateCommand.invoked |> shouldEqual true
 
     [<Fact>]
     let ``Should *Return error and *Not-Invoke 'UpdateCategory' when given an id for a category that doesn't exist``() =
@@ -308,7 +307,7 @@ module AdminCommands =
         |> editCategoryWith getNoCategory updateCategory
         |> shouldBeError
 
-        not !updateCommand.invoked |> shouldEqual true
+        not updateCommand.invoked |> shouldEqual true
     
     [<Fact>]
     let ``Should *Return success and *Invoke 'UpdateCategory' when given an authorized user and id for an existing category``() =
@@ -319,54 +318,52 @@ module AdminCommands =
         |> editCategoryWith getSomeCategory updateCategory
         |> shouldBeOk
 
-        !updateCommand.invoked |> shouldEqual true
+        updateCommand.invoked |> shouldEqual true
        
     /////////////////////////////////
     ////  Tests for 'AddWine'   /////
     /////////////////////////////////
+    let newWine = {NewWine.name="some name";description="some description";price=35m;year=1253;imagePath="path"}
+
     [<Fact>]
     let ``Should *Return error and *Not-Invoke 'AddWine' when given an unauthorized user``() =
         let (addCommand, addWine) = getCommand ()
-        let newWine = {NewWine.name="some name";description="some description";price=35m;year=1253;categoryID=fakeID;imagePath="path"}
 
-        (customer, newWine)
+        (customer,CategoryID fakeID, newWine)
         |> addWineWith getSomeCategory getNoWine addWine
         |> shouldBeError
 
-        not !addCommand.invoked |> shouldEqual true
+        not addCommand.invoked |> shouldEqual true
 
     [<Fact>]
     let ``Should *Return error and *Not-Invoke 'AddWine' when given an invalid category ID``() =
-        let (addCommand, addWine) = getCommand ()
-        let newWine = {NewWine.name="some name";description="some description";price=35m;year=1253;categoryID=fakeID;imagePath="path"}
+        let (addCommand, addWine) = getCommand ()        
 
-        (admin, newWine)
+        (admin,CategoryID fakeID, newWine)
         |> addWineWith getNoCategory getNoWine addWine
         |> shouldBeError
 
-        not !addCommand.invoked |> shouldEqual true
+        not addCommand.invoked |> shouldEqual true
 
     [<Fact>]
     let ``Should *Return error and *Not-Invoke 'AddWine' when given a name for an existing wine``() =
-        let (addCommand, addWine) = getCommand ()
-        let newWine = {NewWine.name="some name";description="some description";price=35m;year=1253;categoryID=fakeID;imagePath="path"}
+        let (addCommand, addWine) = getCommand ()        
 
-        (admin, newWine)
+        (admin,CategoryID fakeID, newWine)
         |> addWineWith getSomeCategory getSomeWine addWine
         |> shouldBeError
 
-        not !addCommand.invoked |> shouldEqual true
+        not addCommand.invoked |> shouldEqual true
 
     [<Fact>]
     let ``Should *Return success and *Invoke 'AddWine' when given an authorized user, existing category and new wine info``() =
-        let (addCommand, addWine) = getCommand ()
-        let newWine = {NewWine.name="some name";description="some description";price=35m;year=1253;categoryID=fakeID;imagePath="path"}
+        let (addCommand, addWine) = getCommand ()        
 
-        (admin, newWine)
+        (admin,CategoryID fakeID, newWine)
         |> addWineWith getSomeCategory getNoWine addWine
         |> shouldBeOk
 
-        !addCommand.invoked |> shouldEqual true
+        addCommand.invoked |> shouldEqual true
 
 
     ////////////////////////////////////
@@ -380,7 +377,7 @@ module AdminCommands =
         |> removeWineWith getSomeWine removeWine
         |> shouldBeError
 
-        not !removeCommand.invoked |> shouldEqual true
+        not removeCommand.invoked |> shouldEqual true
         
     [<Fact>]
     let ``Should *Return error and *Not-Invoke 'RemoveWine' when given an id for a wine that doesn't exist``() =
@@ -390,7 +387,7 @@ module AdminCommands =
         |> removeWineWith getNoWine removeWine
         |> shouldBeError
 
-        not !removeCommand.invoked |> shouldEqual true
+        not removeCommand.invoked |> shouldEqual true
         
     [<Fact>]
     let ``Should *Return success and *Invoke 'RemoveWine' when given an authorized user and id for an existing wine``() =
@@ -400,66 +397,64 @@ module AdminCommands =
         |> removeWineWith getSomeWine removeWine
         |> shouldBeOk
 
-        !removeCommand.invoked |> shouldEqual true
+        removeCommand.invoked |> shouldEqual true
 
         
     ////////////////////////////////////
     ////  Tests for 'UpdateWine'   /////
     ////////////////////////////////////
+    let editWineName={EditWine.name=Some "new name";price=Some 44m;imagePath=None;year=Some 2014;categoryID=None;description=None}
+    let editWinePath={EditWine.name=None;price=None;imagePath=Some "new path";year=Some 2014;categoryID=None;description=None}
+
     [<Fact>]
     let ``Should *Return error and *Not-Invoke 'UpdateWine' when given an unauthorized user``() =
         let (updateCommand, updateWine) = getCommand ()
-        let editWine={EditWine.name=Some "new name";price=None;imagePath=None;year=None;categoryID=None;description=None}
        
-        (customer, (WineID fakeID), editWine)
+        (customer, (WineID fakeID), editWineName)
         |> editWineWith getSomeCategory getSomeWine updateWine
         |> shouldBeError
 
-        not !updateCommand.invoked |> shouldEqual true
+        not updateCommand.invoked |> shouldEqual true
         
     [<Fact>]
     let ``Should *Return error and *Not-Invoke 'UpdateWine' when given an id for a wine that doesn't exist``() =
         let (updateCommand, updateWine) = getCommand ()
-        let editWine={EditWine.name=Some "new name";price=None;imagePath=None;year=None;categoryID=None;description=None}
        
-        (admin, (WineID fakeID), editWine)
+        (admin, (WineID fakeID), editWineName)
         |> editWineWith getSomeCategory getNoWine updateWine
         |> shouldBeError
 
-        not !updateCommand.invoked |> shouldEqual true
+        not updateCommand.invoked |> shouldEqual true
     
     [<Fact>]
     let ``Should *Return error and *Not-Invoke 'UpdateWine' when given a name for a wine that exists``() =
         let (updateCommand, updateWine) = getCommand ()
-        let editWine={EditWine.name=Some "new name";categoryID=Some fakeID;price=None;imagePath=None;year=None;description=None}
        
-        (admin, (WineID fakeID), editWine)
+        (admin, (WineID fakeID), editWineName)
         |> editWineWith getNoCategory getSomeWine updateWine
         |> shouldBeError
 
-        not !updateCommand.invoked |> shouldEqual true
+        not updateCommand.invoked |> shouldEqual true
 
     [<Fact>]
     let ``Should *Return error and *Not-Invoke 'UpdateWine' when given an id for a category that doesn't exist``() =
         let (updateCommand, updateWine) = getCommand ()
-        let editWine={EditWine.name=Some "new name";categoryID=Some fakeID;price=None;imagePath=None;year=None;description=None}
        
-        (admin, (WineID fakeID), editWine)
+        (admin, (WineID fakeID), editWinePath)
         |> editWineWith getNoCategory getNoWine updateWine
         |> shouldBeError
 
-        not !updateCommand.invoked |> shouldEqual true
+        not updateCommand.invoked |> shouldEqual true
     
     [<Fact>]
     let ``Should *Return success and *Invoke 'UpdateWine' when given an authorized user, valid category and wine id``() =
         let (updateCommand, updateWine) = getCommand ()
-        let editWine={EditWine.name=None;categoryID=Some fakeID;price=None;imagePath=None;year=None;description=None}
 
-        (admin, (WineID fakeID), editWine)
+        (admin, (WineID fakeID), editWinePath)
         |> editWineWith getSomeCategory getSomeWine updateWine
         |> shouldBeOk
 
-        !updateCommand.invoked |> shouldEqual true
+        updateCommand.invoked |> shouldEqual true
 
        
     /////////////////////////////////////////
@@ -473,7 +468,7 @@ module AdminCommands =
         |> editQuantityWith getSomeWine updateQuantity
         |> shouldBeError
 
-        not !updateCommand.invoked |> shouldEqual true
+        not updateCommand.invoked |> shouldEqual true
 
     
     [<Fact>]
@@ -484,7 +479,7 @@ module AdminCommands =
         |> editQuantityWith getNoWine updateQuantity
         |> shouldBeError
 
-        not !updateCommand.invoked |> shouldEqual true
+        not updateCommand.invoked |> shouldEqual true
 
     
     [<Fact>]
@@ -495,4 +490,4 @@ module AdminCommands =
         |> editQuantityWith getSomeWine updateQuantity
         |> shouldBeOk
 
-        !updateCommand.invoked |> shouldEqual true
+        updateCommand.invoked |> shouldEqual true

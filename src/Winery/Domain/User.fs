@@ -159,13 +159,13 @@ let removeCategoryWith getCategory deleteCategory: UserOperation<User * Category
                 | Ok v -> Ok v )
         removeWith user
 
-let addWineWith getCategory getWine addWine: UserOperation<User * NewWine, WineID> =
-    fun (user, newWine) ->
+let addWineWith getCategory getWine addWine: UserOperation<User * CategoryID * NewWine, WineID> =
+    fun (user, categoryID, newWine) ->
         let addWith = 
             Ok
             >> validateAdmin
             >> Result.bind (fun _ -> 
-                match createWine getCategory getWine addWine newWine with
+                match createWine getCategory getWine addWine (categoryID, newWine) with
                 | Error msg -> invalidUserOp msg
                 | Ok v -> Ok v ) 
         addWith user

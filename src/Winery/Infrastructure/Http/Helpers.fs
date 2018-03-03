@@ -3,25 +3,39 @@ module Http.Helpers
 
 open Giraffe
 open Winery
+open Microsoft.AspNetCore.Http
 
 let fakeAdmin: User = { id=System.Guid(); email=""; firstName=""; lastName=""; role=Administrator }
-
-let badRequest: HttpHandler = setStatusCode 400
-
-let badRequestM m: HttpHandler = setStatusCode 400 >=> text m
-
-let notFound: HttpHandler = setStatusCode 404
-
-let notFoundM m: HttpHandler = notFound >=> text m
-
-let unauthorized: HttpHandler = setStatusCode 401
-
-let unauthorizedM m: HttpHandler = unauthorized >=> text m
-
-let accepted: HttpHandler = setStatusCode 202
 
 let created: HttpHandler = setStatusCode 201
 
 let createdM m: HttpHandler = created >=> text m
 
+let accepted: HttpHandler = setStatusCode 202
+
+let noContent: HttpHandler = setStatusCode 204
+
+let badRequest: HttpHandler = setStatusCode 400
+
+let badRequestM m: HttpHandler = setStatusCode 400 >=> text m
+
+let unauthorized: HttpHandler = setStatusCode 401
+
+let unauthorizedM m: HttpHandler = unauthorized >=> text m
+
+let notFound: HttpHandler = setStatusCode 404
+
+let notFoundM m: HttpHandler = notFound >=> text m
+
 let serverError m: HttpHandler = setStatusCode 500 >=> text m
+
+let hasValue input  = fun getValue -> if isNull input then None else Some (getValue input)
+
+let handleError error: HttpHandler = 
+    fun (next: HttpFunc) (ctx: HttpContext) ->
+        task {
+            return! error |> function
+            | InvalidOp m -> badRequestM m next ctx
+            | SystemError m -> serverError m next ctx
+            | Unauthorized _ -> unauthorized next ctx
+        }

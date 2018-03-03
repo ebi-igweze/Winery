@@ -19,7 +19,7 @@ type Storage =
       getWinesInCategory         : CategoryID -> ExistingWine list option
       getWineInCategoryById     : CategoryID -> WineID -> ExistingWine option
       getWineInCategoryByName   : CategoryID -> WineName -> ExistingWine option
-      addWine                   : WineID * NewWine -> unit option
+      addWine                   : CategoryID * WineID * NewWine -> unit option
       updateWine                : WineID * EditWine -> unit option
       deleteWine                : WineID -> unit option }
 
@@ -44,7 +44,7 @@ type InMemoryStore = { categories:  List<Category> }
 ////  Type Transforms
 /////////////////////////
 let wineToExistingWine (wine: Wine) = {id=wine.id; categoryID=wine.categoryId; name=wine.name; description=wine.description; year=wine.year; price=wine.price; imagePath=wine.imagePath}
-let newWineToWine (id: Guid, newWine: NewWine) = Wine(id=id, categoryId=newWine.categoryID, name=newWine.name, description=newWine.description, year=newWine.year, price=newWine.price, imagePath=newWine.imagePath)
+let newWineToWine (categoryID: Guid, id: Guid, newWine: NewWine) = Wine(id=id, categoryId=categoryID, name=newWine.name, description=newWine.description, year=newWine.year, price=newWine.price, imagePath=newWine.imagePath)
 let categoryToExistingCategory (cat: Category) = {id=cat.id; name=cat.name; description=cat.description; wines=cat.wines |> (Seq.map wineToExistingWine >> Seq.toList)}
 let newCategoryToCategory (id: Guid, cat: NewCategory) = Category(id=id, name=cat.name, description=cat.description)
 
@@ -126,21 +126,21 @@ let private queryWineInCategoryByName =
 /////////////////////////
 ////  Commands
 /////////////////////////
-let addCategory =
+let private addCategory =
     fun (CategoryID id, category) ->
         (id, category)
         |> newCategoryToCategory 
         |> storage.categories.Add
         |> Some
 
-let removeCategory =
+let private removeCategory =
     fun (categoryId) ->
         categoryId
         |> queryCategoryById
         |> Option.map storage.categories.Remove
         |> Option.map ignore
 
-let updateCategory =
+let private updateCategory =
     let update (editCategory: EditCategory) (category: Category) =
         // extremely ugly way
         if (editCategory.name.IsSome) then category.name <- editCategory.name.Value
@@ -151,18 +151,18 @@ let updateCategory =
         |> queryCategoryById
         |> Option.map (update editCategory)
 
-let addWine = 
+let private addWine = 
     let add = fun (wine:Wine) -> 
         wine.categoryId
         |> (queryCategoryById << CategoryID) 
         |> Option.map (fun category -> category.wines.Add wine)
 
-    fun (WineID id, wine) ->
-        (id, wine)
+    fun (CategoryID catId, WineID id, wine) ->
+        (catId, id, wine)
         |> newWineToWine
         |> add
 
-let removeWine = 
+let private removeWine = 
     let remove = fun (wine: Wine) -> 
         wine.categoryId
         |> (queryCategoryById << CategoryID)
@@ -174,7 +174,7 @@ let removeWine =
         |> queryWineById
         |> Option.bind remove
 
-let updateWine =
+let private updateWine =
     let update = fun (editWine: EditWine) (wine: Wine) ->
         // extremely ugly way
         if (editWine.name.IsSome) then wine.name <- editWine.name.Value
@@ -192,35 +192,30 @@ let updateWine =
 /////////////////////////
 ////  Query Stubs
 /////////////////////////
-let getCategories = fun () -> storage.categories |> Seq.map categoryToExistingCategory |> Seq.toList
+let private getCategories = fun () -> storage.categories |> Seq.map categoryToExistingCategory |> Seq.toList
 
-let getCategoryById = fun (categoryId) ->
+let private getCategoryById = fun (categoryId) ->
     categoryId |> (queryCategoryById >> Option.map categoryToExistingCategory)
 
-let getCategoryByName = fun (categoryName) ->
+let private getCategoryByName = fun (categoryName) ->
     categoryName |> (queryCategoryByName >> Option.map categoryToExistingCategory)
 
-let getCategoryByIDorName = fun (idOrName) ->
+let private getCategoryByIDorName = fun (idOrName) ->
     idOrName |> function
     | ID categoryId -> getCategoryById categoryId  
     | Name categoryName -> getCategoryByName categoryName
 
-let getWines = fun () -> queryWines () |> Seq.map wineToExistingWine |> Seq.toList
+let private getWines = fun () -> queryWines () |> Seq.map wineToExistingWine |> Seq.toList
 
-let getWineByName = fun (wineName) -> wineName  |> (queryWineByName >> Option.map wineToExistingWine)
+let private getWineByName = fun (wineName) -> wineName  |> (queryWineByName >> Option.map wineToExistingWine)
 
-let getWineById = fun (wineId) -> wineId |> (queryWineById >> Option.map wineToExistingWine)
+let private getWineById = fun (wineId) -> wineId |> (queryWineById >> Option.map wineToExistingWine)
 
-let getWinesInCategory = fun (catId) -> catId |> (queryWinesInCategory >> Option.map (Seq.map wineToExistingWine) >> Option.map List.ofSeq)
+let private getWinesInCategory = fun (catId) -> catId |> (queryWinesInCategory >> Option.map (Seq.map wineToExistingWine) >> Option.map List.ofSeq)
 
-let getWineInCategoryById = fun catId wineId -> (catId,wineId) ||> queryWineInCategoryById |> Option.map wineToExistingWine
+let private getWineInCategoryById = fun catId wineId -> (catId,wineId) ||> queryWineInCategoryById |> Option.map wineToExistingWine
 
-let getWineInCategoryByName = fun catId wineName -> (catId, wineName) ||> queryWineInCategoryByName |> Option.map wineToExistingWine
-
-let getWineByIdOrName = fun (idOrName) ->   
-    idOrName |> function
-    | ID wineId -> getWineById wineId
-    | Name wineName -> getWineByName wineName
+let private getWineInCategoryByName = fun catId wineName -> (catId, wineName) ||> queryWineInCategoryByName |> Option.map wineToExistingWine
 
 
 /////////////////////////

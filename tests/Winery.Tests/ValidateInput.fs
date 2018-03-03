@@ -54,49 +54,56 @@ module CategoryInputValidation =
 module WineInputValidation =
     [<Fact>]
     let ``Should return error if given same 'name' and 'description'``() =
-        let newWine = {NewWine.name="same name"; description="same name"; price=33m; year=2012; categoryID=fakeID; imagePath="img/path"}
-        newWine
+        let newWine = {NewWine.name="same name"; description="same name"; price=33m; year=2012; imagePath="img/path"}
+        (CategoryID fakeID, newWine)
         |> createWine getSomeCategory getSomeWine Some
         |> shouldBeError
 
     [<Fact>]
     let ``Should return error if given an empty 'name'``() =
-        let newWine = {NewWine.name=""; description="unique desc"; price=33m; year=2012; categoryID=fakeID; imagePath="img/path"}
-        newWine
+        let newWine = {NewWine.name=""; description="unique desc"; price=33m; year=2012; imagePath="img/path"}
+        (CategoryID fakeID, newWine)
         |> createWine getSomeCategory getSomeWine Some
         |> shouldBeError
 
     [<Fact>]
     let ``Should return error if given an empty 'descriptionn'``() =
-        let newWine = {NewWine.name="unique name"; description=""; price=33m; year=2012; categoryID=fakeID; imagePath="img/path"}
-        newWine
+        let newWine = {NewWine.name="unique name"; description=""; price=33m; year=2012; imagePath="img/path"}
+        (CategoryID fakeID, newWine)
         |> createWine getSomeCategory getSomeWine Some
         |> shouldBeError
 
     [<Fact>]
     let ``Should return error if given a null value for 'name'``() =
-        let newWine = {NewWine.name=null; description="unique desc"; price=33m; year=2012; categoryID=fakeID; imagePath="img/path"}
-        newWine
+        let newWine = {NewWine.name=null; description="unique desc"; price=33m; year=2012; imagePath="img/path"}
+        (CategoryID fakeID, newWine)
         |> createWine getSomeCategory getSomeWine Some
         |> shouldBeError
 
     [<Fact>]
     let ``Should return error if given a null value for 'descriptionn'``() =
-        let newWine = {NewWine.name="unique name"; description=null; year=2002; price=50m; categoryID=fakeID; imagePath="img/path"}
-        newWine
+        let newWine = {NewWine.name="unique name"; description=null; year=2002; price=50m; imagePath="img/path"}
+        (CategoryID fakeID, newWine)
         |> createWine getSomeCategory getSomeWine Some
         |> shouldBeError    
 
     [<Fact>]
     let ``Should return error if given a year less than '1250'``() =
-        let newWine = {NewWine.name="unique name"; description="unique desc"; price=33m; year=1042; categoryID=fakeID; imagePath="img/path"}
-        newWine
+        let newWine = {NewWine.name="unique name"; description="unique desc"; price=33m; year=1042; imagePath="img/path"}
+        (CategoryID fakeID, newWine)
         |> createWine getSomeCategory getSomeWine Some
         |> shouldBeError
 
     [<Fact>]
-    let ``Should return success if given unique 'name', 'description' and year above '1250'``() =
-        let newWine = {NewWine.name="unique name"; description="unique desc"; price=33m; year=2012; categoryID=fakeID; imagePath="img/path"}
-        newWine
+    let ``Should return error if given a price less than or equal to '0'``() =
+        let newWine = {NewWine.name="unique name"; description="unique desc"; price=0m; year=1042; imagePath="img/path"}
+        (CategoryID fakeID, newWine)
+        |> createWine getSomeCategory getSomeWine Some
+        |> shouldBeError
+
+    [<Fact>]
+    let ``Should return success if given unique 'name', 'description', a price above '0', and year above '1250'``() =
+        let newWine = {NewWine.name="unique name"; description="unique desc"; price=33m; year=2012; imagePath="img/path"}
+        (CategoryID fakeID, newWine)
         |> createWine getSomeCategory getNoWine Some
         |> shouldBeOk

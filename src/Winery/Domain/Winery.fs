@@ -17,8 +17,7 @@ type NewWine =
       description: string
       year: int
       price: decimal
-      imagePath: string
-      categoryID: Guid }
+      imagePath: string }
 
 type EditWine = 
     { name: string option
@@ -66,10 +65,10 @@ let private isEmptyString value = String.Empty = value || " " = value
 let private isMaxStringLength length value = String.length value > length
 let private isEqual (value1, value2) = value1 = value2
 
-let errorIf func errorMsg = 
+let errorIf condition errorMsg = 
     fun result -> 
         result |> Result.bind (fun arg ->
-            if func arg 
+            if condition arg 
             then Error errorMsg
             else Ok arg )
 
@@ -149,7 +148,7 @@ let deleteWineCategory getCategory (deleteCategory: CategoryID -> _ option): Ope
         delete categoryId
 
             
-let updateWineCategory (getCategory: IDorName<CategoryID, CategoryName> -> ExistingCategory option) (updateCategory: EditCategory -> _ option ): Operation<CategoryID * EditCategory, unit> =
+let updateWineCategory (getCategory: IDorName<CategoryID, CategoryName> -> ExistingCategory option) updateCategory: Operation<CategoryID * EditCategory, unit> =
     
     let validCategoryUpdateInfo: Operation<EditCategory, EditCategory> =
         fun (editCategory: EditCategory) ->
@@ -175,7 +174,7 @@ let updateWineCategory (getCategory: IDorName<CategoryID, CategoryName> -> Exist
             >> Result.bind (fun _ -> validCategoryUpdateInfo editCategory )
             >> Result.bind (fun editC -> notExistingCategoryName (categoryId, editC))
             >> Result.bind (fun c ->
-                match updateCategory c with
+                match updateCategory (categoryId, c) with
                 | None -> Error (unableTo "update category")
                 | Some _ -> Ok () )
         update categoryId   
@@ -184,8 +183,8 @@ let updateWineCategory (getCategory: IDorName<CategoryID, CategoryName> -> Exist
 /////////////////////////////////////////////////
 //// Operations For Wine
 //////////////////////////////////////////////////         
-
-let private isValidYear = errorIf (fun y -> y < 1240 || y > DateTime.Now.Year) "Year cannot be less than 1240 or greater than current year"
+let private isValidPrice = errorIf (fun p -> p <= 0m) "Wine price must be greater than 0"
+let private isValidYear = errorIf (fun y -> y < 1240 || y > DateTime.Now.Year) "Wine year cannot be less than 1240 or greater than current year"
 
 let private isNotExistingWine (getCategory: WineName -> ExistingWine option): Operation<NewWine, NewWine> =
     fun (newWine: NewWine) -> 
@@ -199,17 +198,18 @@ let private isExistingWineWithId (getWine: WineID -> ExistingWine option): Opera
         | Some wine -> Ok wine
         | None -> Error (sprintf "A wine with this %O does not exist" wineId)
 
-let createWine getCategory getWine (addWine: (WineID * NewWine) -> _ option): Operation<NewWine, WineID> =
-    fun (newWine: NewWine) ->
+let createWine getCategory getWine addWine: Operation<CategoryID * NewWine, WineID> =
+    fun (categoryID, newWine) ->
         let add = 
             Ok
             >> Result.bind (isNotExistingWine getWine)
-            >> Result.bind (fun _ -> isExistingCategoryWithId getCategory (CategoryID newWine.categoryID))
+            >> Result.bind (fun _ -> isExistingCategoryWithId getCategory (categoryID))
             >> Result.bind (fun _ -> validND (newWine.name, newWine.description))
+            >> Result.bind (fun _ -> isValidPrice (Ok newWine.price))
             >> Result.bind (fun _ -> isValidYear (Ok newWine.year))
             >> Result.bind (fun _ ->
                 let wineId = WineID (Guid.NewGuid())
-                match addWine (wineId, newWine) with
+                match addWine (categoryID, wineId, newWine) with
                 | None -> Error (unableTo "add new wine")
                 | Some _ -> Ok wineId )
         add newWine
@@ -267,13 +267,19 @@ let updateWine (getWine: IDorName<WineID, WineName> -> ExistingWine option) getC
                 |> Result.bind (fun _ -> Ok editWine)
             | _ -> Ok editWine
 
+        let checkPrice (editWine: EditWine) =
+            match editWine with
+            | {price=Some p} -> Ok p |> isValidPrice |> fun _ -> Ok editWine
+            | _ -> Ok editWine
+
         fun (editWine: EditWine) ->
             match editWine with
-            | {name=None; description=None; year=None; categoryID=None} -> Error "No to update"
+            | {name=None; description=None; year=None; categoryID=None} -> Error "Nothing to update"
             | _ -> 
                 editWine 
                 |> checkName 
                 |> Result.bind checkYear
+                |> Result.bind checkPrice
                 |> Result.bind checkCategory
                 |> Result.bind checkDescription 
                 |> Result.bind checkNameDescription
