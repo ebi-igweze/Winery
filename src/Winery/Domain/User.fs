@@ -122,6 +122,8 @@ let placeOrder (getCart: UserID -> Cart option) (checkout: UserID -> _ option): 
 ///////////////////////////////////////////////////
 //// Administrator Operations  
 ///////////////////////////////////////////////////
+let toInvalidOp m =  Result.mapError InvalidOp m
+
 let private validateAdmin =
     let isAdmin user = user.role |> function | Administrator -> true | _ -> false
     errorIf (not << isAdmin) (Unauthorized "unauthorized access")
@@ -131,10 +133,11 @@ let addCategoryWith getCategory addCategory: UserOperation<User * NewCategory, C
         let addWith = 
             Ok
             >> validateAdmin
-            >> Result.bind (fun _ -> 
-                match createWineCategory getCategory addCategory newCategory with
-                | Error msg -> invalidUserOp msg
-                | Ok r -> Ok r )
+            >> Result.bind (fun _ -> validateNewCategory getCategory newCategory |> toInvalidOp)
+            >> Result.bind (fun catId -> 
+                match addCategory (catId, newCategory) with
+                | Some _ -> Ok catId
+                | None -> systemError (unableTo "add new category") )
         addWith user
 
 let editCategoryWith getCategory updateCategory: UserOperation<User * CategoryID * EditCategory, unit> =
@@ -142,10 +145,11 @@ let editCategoryWith getCategory updateCategory: UserOperation<User * CategoryID
         let editWith = 
             Ok
             >> validateAdmin
-            >> Result.bind (fun _ ->
-                match updateWineCategory getCategory updateCategory (categoryID, editCategory) with
-                | Error msg -> invalidUserOp msg
-                | Ok v -> Ok v )
+            >> Result.bind (fun _ -> validateUpdateCategory getCategory (categoryID, editCategory) |> toInvalidOp)
+            >> Result.bind (fun _ -> 
+                match updateCategory (categoryID, editCategory) with
+                | Some _ -> Ok ()
+                | None -> systemError (unableTo "update category") )
         editWith user
 
 let removeCategoryWith getCategory deleteCategory: UserOperation<User * CategoryID, unit> =
@@ -153,10 +157,11 @@ let removeCategoryWith getCategory deleteCategory: UserOperation<User * Category
         let removeWith =
             Ok
             >> validateAdmin
-            >> Result.bind (fun _ -> 
-                match deleteWineCategory getCategory deleteCategory categoryID with
-                | Error msg -> invalidUserOp msg
-                | Ok v -> Ok v )
+            >> Result.bind (fun _ -> (validateDeleteCategory getCategory categoryID) |>  toInvalidOp)
+            >> Result.bind (fun _ ->
+                match deleteCategory categoryID with
+                | Some _ -> Ok ()
+                | None -> systemError (unableTo "delete category") )
         removeWith user
 
 let addWineWith getCategory getWine addWine: UserOperation<User * CategoryID * NewWine, WineID> =
@@ -164,10 +169,11 @@ let addWineWith getCategory getWine addWine: UserOperation<User * CategoryID * N
         let addWith = 
             Ok
             >> validateAdmin
-            >> Result.bind (fun _ -> 
-                match createWine getCategory getWine addWine (categoryID, newWine) with
-                | Error msg -> invalidUserOp msg
-                | Ok v -> Ok v ) 
+            >> Result.bind (fun _ -> validateNewWine getCategory getWine (categoryID, newWine) |> toInvalidOp)
+            >> Result.bind (fun wineId ->  
+                match addWine (categoryID, wineId, newWine) with
+                | Some _ -> Ok wineId 
+                | None -> systemError (unableTo "add new wine") )
         addWith user
 
 let removeWineWith getWine deleteWine: UserOperation<User * WineID, unit> =
@@ -175,10 +181,11 @@ let removeWineWith getWine deleteWine: UserOperation<User * WineID, unit> =
         let removeWith = 
             Ok
             >> validateAdmin
+            >> Result.bind (fun _ -> Winery.Core.validateDeleteWine getWine wineID |> toInvalidOp)
             >> Result.bind (fun _ -> 
-                match Winery.Core.deleteWine getWine deleteWine wineID with
-                | Error msg -> invalidUserOp msg
-                | Ok v -> Ok v )
+                match deleteWine wineID with
+                | Some _ -> Ok ()
+                | None -> systemError (unableTo "delete wine") )
         removeWith user
 
 let editWineWith getCategory getWine updateWine: UserOperation<User * WineID * EditWine, unit> =
@@ -186,10 +193,11 @@ let editWineWith getCategory getWine updateWine: UserOperation<User * WineID * E
         let editWith =
             Ok
             >> validateAdmin
-            >> Result.bind (fun _ -> 
-                match Winery.Core.updateWine getWine getCategory updateWine (wineID, editWine) with
-                | Error msg -> invalidUserOp msg
-                | Ok v -> Ok v )
+            >> Result.bind (fun _ ->  Winery.Core.validateUpdateWine getWine getCategory (wineID, editWine) |> toInvalidOp)
+            >> Result.bind (fun _ ->
+                match updateWine (wineID, editWine) with 
+                | Some _ -> Ok ()
+                | None -> systemError (unableTo "update wine") )
         editWith user
 
 let editQuantityWith getWine setQuantity: UserOperation<User * WineID * uint16, unit> = 
@@ -197,8 +205,9 @@ let editQuantityWith getWine setQuantity: UserOperation<User * WineID * uint16, 
         let editWith = 
             Ok
             >> validateAdmin
-            >> Result.bind (fun _ -> 
-                match updateQuantity getWine setQuantity (wineID, quantity) with
-                | Error msg -> invalidUserOp msg
-                | Ok v -> Ok v )
+            >> Result.bind (fun _ -> updateQuantity getWine (wineID, quantity) |> toInvalidOp)
+            >> Result.bind (fun _ ->
+                match setQuantity (wineID, quantity) with
+                | Some _ -> Ok ()
+                | None -> systemError (unableTo "update wine quantity") )
         editWith user
