@@ -21,7 +21,7 @@ let getNoCart _ = None
 let getEmptyCart _ = Some emptyCart
 let getCartWithItem _ = Some cartWithItem
 
-let existingCategory = {ExistingCategory.id=fakeID; name="Sparkling Wine"; description="A class of table Wines"; wines=[]}
+let existingCategory = {ExistingCategory.id=categoryID; name="Sparkling Wine"; description="A class of table Wines"; wines=[]}
 let getSomeCategory _ = Some existingCategory
 let getNoCategory _ = None
 

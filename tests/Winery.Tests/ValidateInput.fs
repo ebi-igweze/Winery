@@ -37,7 +37,7 @@ module CategoryInputValidation =
         |> shouldBeError
 
     [<Fact>]
-    let ``Should return error if given a null value for 'descriptionn'``() =
+    let ``Should return error if given a null value for 'description'``() =
         let newCategory = {NewCategory.name="unique name"; description=null}
         newCategory
         |> validateNewCategory getSomeCategory
@@ -50,6 +50,59 @@ module CategoryInputValidation =
         |> validateNewCategory getNoCategory
         |> shouldBeOk
 
+
+    ////////////////////////////////
+    ///// validate updates   //////
+    ///////////////////////////////
+    [<Fact>]
+    let ``Should return error if trying to update with a category that doesn't exist``() =
+        let editCategory = {EditCategory.name=Some "new name"; description=None}
+        (CategoryID fakeID, editCategory)
+        |> validateUpdateCategory getNoCategory
+        |> shouldBeError
+
+    [<Fact>]
+    let ``Should return error if trying to update with an emtpy 'name'``() =
+        let editCategory = {EditCategory.name=Some ""; description=None}
+        (CategoryID fakeID, editCategory)
+        |> validateUpdateCategory getNoCategory
+        |> shouldBeError
+
+    [<Fact>]
+    let ``Should return error if trying to update with an emtpy 'description'``() =
+        let editCategory = {EditCategory.name=None; description=Some ""}
+        (CategoryID fakeID, editCategory)
+        |> validateUpdateCategory getNoCategory
+        |> shouldBeError
+
+    [<Fact>]
+    let ``Should return error if trying to update with nothing to update``() =
+        let editCategory = {EditCategory.name=None; description=None}
+        (CategoryID fakeID, editCategory)
+        |> validateUpdateCategory getSomeCategory
+        |> shouldBeError
+
+    [<Fact>]
+    let ``Should return error if trying to update with an existing category 'name'``() =
+        let editCategory = {EditCategory.name=Some "fake name"; description=None}
+        let getCategory = function
+            | Name (CategoryName _) -> getSomeCategory ()
+            | ID (CategoryID _) -> getSomeCategory ()
+
+        (CategoryID fakeID, editCategory)
+        |> validateUpdateCategory getCategory
+        |> shouldBeError
+
+    [<Fact>]
+    let ``Should return success if trying to update with a valid updateInfo 'name or description'``() =
+        let editCategory = {EditCategory.name=Some "new name"; description=Some "new desc"}
+        let getCategory = function
+            | Name (CategoryName _) -> getNoCategory ()
+            | ID (CategoryID _) -> getSomeCategory ()
+
+        (CategoryID fakeID, editCategory)
+        |> validateUpdateCategory getCategory
+        |> shouldBeOk
 
 module WineInputValidation =
     [<Fact>]
@@ -106,4 +159,120 @@ module WineInputValidation =
         let newWine = {NewWine.name="unique name"; description="unique desc"; price=33m; year=2012; imagePath="img/path"}
         (CategoryID fakeID, newWine)
         |> validateNewWine getSomeCategory getNoWine
+        |> shouldBeOk
+
+
+    ////////////////////////////////
+    ///// validate updates   //////
+    ///////////////////////////////
+    [<Fact>]
+    let ``Should return error if trying to update with a category that doesn't exist``() =
+        let editWine = {EditWine.name=Some "new name"; description=None; year=None; price=None; categoryID=Some fakeID; imagePath=None}
+        let getWine = function
+            | Name (WineName _) -> getNoWine ()
+            | ID (WineID _) -> getSomeWine ()
+            
+        (WineID fakeID, editWine)
+        |> validateUpdateWine getWine getNoCategory
+        |> shouldBeError
+
+    [<Fact>]
+    let ``Should return error if trying to update with a wine that doesn't exist``() =
+        let editWine = {EditWine.name=Some "new name"; description=None; year=None; price=None; categoryID=None; imagePath=None}
+        
+        (WineID fakeID, editWine)
+        |> validateUpdateWine getNoWine getNoCategory
+        |> shouldBeError
+
+    [<Fact>]
+    let ``Should return error if trying to update with an emtpy 'name'``() =
+        let editWine = {EditWine.name=Some ""; description=None; year=None; price=None; categoryID=None; imagePath=None}
+        
+        (WineID fakeID, editWine)
+        |> validateUpdateWine getNoWine getSomeCategory
+        |> shouldBeError
+
+    [<Fact>]
+    let ``Should return error if trying to update with an emtpy 'description'``() =
+        let editWine = {EditWine.name=None; description=Some ""; year=None; price=None; categoryID=None; imagePath=None}
+        let getWine = function
+            | Name (WineName _) -> getNoWine ()
+            | ID (WineID _) -> getSomeWine ()
+            
+        (WineID fakeID, editWine)
+        |> validateUpdateWine getWine getSomeCategory
+        |> shouldBeError
+
+    [<Fact>]
+    let ``Should return error if trying to update with nothing to update``() =
+        let editWine = {EditWine.name=None; description=None; year=None; price=None; categoryID=None; imagePath=None}
+        let getWine = function
+            | Name (WineName _) -> getNoWine ()
+            | ID (WineID _) -> getSomeWine ()
+
+        (WineID fakeID, editWine)
+        |> validateUpdateWine getWine getSomeCategory
+        |> shouldBeError
+
+    [<Fact>]
+    let ``Should return error if trying to update with 'name' equal to 'description'``() =
+        let editWine = {EditWine.name=Some "new name"; description=Some "new name"; year=None; price=None; categoryID=None; imagePath=None}
+        let getWine = function
+            | Name (WineName _) -> getNoWine ()
+            | ID (WineID _) -> getSomeWine ()
+            
+        (WineID fakeID, editWine)
+        |> validateUpdateWine getWine getSomeCategory
+        |> shouldBeError
+
+    [<Fact>]
+    let ``Should return error if trying to update with 'year' greater than current year``() =
+        let editWine = {EditWine.name=None; description=None; year=Some 2050; price=None; categoryID=None; imagePath=None}
+        let getWine = function
+            | Name (WineName _) -> getNoWine ()
+            | ID (WineID _) -> getSomeWine ()
+            
+        (WineID fakeID, editWine)
+        |> validateUpdateWine getWine getSomeCategory
+        |> shouldBeError
+
+    [<Fact>]
+    let ``Should return error if trying to update with 'year' less than 1240``() =
+        let editWine = {EditWine.name=None; description=None; year=Some 1239; price=None; categoryID=None; imagePath=None}
+        let getWine = function
+            | Name (WineName _) -> getNoWine ()
+            | ID (WineID _) -> getSomeWine ()
+            
+        (WineID fakeID, editWine)
+        |> validateUpdateWine getWine getSomeCategory
+        |> shouldBeError
+
+    [<Fact>]
+    let ``Should return error if trying to update with 'price' not greater than 0``() =
+        let editWine = {EditWine.name=None; description=None; year=None; price=Some 0m; categoryID=None; imagePath=None}
+        let getWine = function
+            | Name (WineName _) -> getNoWine ()
+            | ID (WineID _) -> getSomeWine ()
+            
+        (WineID fakeID, editWine)
+        |> validateUpdateWine getWine getSomeCategory
+        |> shouldBeError
+
+    [<Fact>]
+    let ``Should return error if trying to update with 'name' of an existing wine``() =
+        let editWine = {EditWine.name=None; description=None; year=None; price=Some 0m; categoryID=None; imagePath=None}
+            
+        (WineID fakeID, editWine)
+        |> validateUpdateWine getSomeWine getSomeCategory
+        |> shouldBeError
+
+    [<Fact>]
+    let ``Should return success if trying to update with a valid updateInfo 'name or description'``() =
+        let editWine = {EditWine.name=Some "new name"; description=None; year=None; price=None; categoryID=None; imagePath=None}
+        let getWine = function
+            | Name (WineName _) -> getNoWine ()
+            | ID (WineID _) -> getSomeWine ()
+
+        (WineID fakeID, editWine)
+        |> validateUpdateWine getWine getSomeCategory
         |> shouldBeOk

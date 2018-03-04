@@ -39,8 +39,7 @@ module CustomerCommands =
     let ``Should *Return success, *Invoke 'addCartItem' and *Not-Invoke 'updateCart' when given an item that's not in cart``() =
         let (updateAction, updateCart) = getCommand ()
         let (addAction, addToCart) = getCommand ()
-        let actor = fun (action: CartAction) -> 
-            match action with
+        let actor = function 
             | AddItem _ -> addToCart ()
             | UpdateQuantity _ -> updateCart ()
             |_ -> invalidOp "cannot call this method"
@@ -56,8 +55,7 @@ module CustomerCommands =
     let ``Should *Return success, *Invoke 'addCartItem' and *Not-Invoke 'updateCart' when no cart has been created for user``() =
         let (updateAction, updateCart) = getCommand ()
         let (addAction, addToCart) = getCommand ()
-        let actor = fun (action: CartAction) -> 
-            match action with
+        let actor = function 
             | AddItem _ -> addToCart ()
             | UpdateQuantity _ -> updateCart ()
             |_ -> invalidOp "cannot call this method"
@@ -73,8 +71,7 @@ module CustomerCommands =
     let ``Should *Return sucess, *Not-Invoke 'addCartItem' and *Invoke 'UpdateCart' when given an item that is in cart``() = 
         let (updateAction, updateCart) = getCommand ()
         let (addAction, addToCart) = getCommand ()
-        let actor = fun (action: CartAction) -> 
-            match action with
+        let actor = function 
             | AddItem _ -> addToCart ()
             | UpdateQuantity _ -> updateCart ()
             |_ -> invalidOp "cannot call this method"
@@ -92,8 +89,7 @@ module CustomerCommands =
     [<Fact>]
     let ``Should *Return error and *Not-Invoke 'UpdateCart' when no cart has been created``() =
         let (updateAction, updateCart) = getCommand ()
-        let actor = fun (action: CartAction) -> 
-            match action with
+        let actor = function 
             | UpdateQuantity _ -> updateCart ()
             |_ -> invalidOp "cannot call this method"
 
@@ -106,8 +102,7 @@ module CustomerCommands =
     [<Fact>]
     let ``Should *Return error and *Not-Invoke 'UpdateCart' when given an item that is not in cart``() =
         let (updateAction, updateCart) = getCommand ()
-        let actor = fun (action: CartAction) -> 
-            match action with
+        let actor = function 
             | UpdateQuantity _ -> updateCart ()
             |_ -> invalidOp "cannot call this method"
 
@@ -120,8 +115,7 @@ module CustomerCommands =
     [<Fact>]
     let ``Should *Return sucess and *Invoke 'UpdateCart' when given an item that is in cart``() =
         let (updateAction, updateCart) = getCommand ()
-        let actor = fun (action: CartAction) -> 
-            match action with
+        let actor = function 
             | UpdateQuantity _ -> updateCart ()
             |_ -> invalidOp "cannot call this method"
 
@@ -138,8 +132,7 @@ module CustomerCommands =
     [<Fact>]
     let ``Should *Return error and *Not-Invoke 'RemoveCartItem' when no cart has been created``() =
         let (deleteAction, deleteCartItem) = getCommand ()
-        let actor = fun (action: CartAction) -> 
-            match action with
+        let actor = function 
             | RemoveItem _ -> deleteCartItem ()
             |_ -> invalidOp "cannot call this method"
 
@@ -152,8 +145,7 @@ module CustomerCommands =
     [<Fact>]
     let ``Should *Return error and *Not-Invoke 'RemoveCartItem' when given an item that is not in cart``() =
         let (deleteAction, deleteCartItem) = getCommand ()
-        let actor = fun (action: CartAction) -> 
-            match action with
+        let actor = function 
             | RemoveItem _ -> deleteCartItem ()
             |_ -> invalidOp "cannot call this method"
 
@@ -166,8 +158,7 @@ module CustomerCommands =
     [<Fact>]
     let ``Should *Return sucess and *Invoke 'RemoveCartItem' when given an item that is in cart``() =
         let (deleteAction, deleteCartItem) = getCommand ()
-        let actor = fun (action: CartAction) -> 
-            match action with
+        let actor = function 
             | RemoveItem _ -> deleteCartItem ()
             |_ -> invalidOp "cannot call this method"
 
