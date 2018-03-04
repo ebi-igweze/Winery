@@ -20,7 +20,7 @@ module CustomerCommands =
     ////  Tests for 'AddCartItem'   ////
     ////////////////////////////////////
     [<Fact>]
-    let ``Should *Return error and *Not-Invoke 'addCartItem' and 'updateCcart' when given a WineID that doesn't exist``() =
+    let ``Should *Return error and *Not-Invoke 'addCartItem' and 'updateCart' when given a WineID that doesn't exist``() =
         let (updateAction, updateCart) = getCommand ()
         let (addAction, addToCart) = getCommand ()
         let actor = function
@@ -28,7 +28,23 @@ module CustomerCommands =
             | UpdateQuantity _ -> updateCart ()
             | _ -> invalidOp "cannot call this method"
 
-        (UserID userID, WineID fakeID)
+        (UserID userID, WineID fakeID, 1us)
+        |> addItemToCart getEmptyCart getNoWine actor
+        |> shouldBeError
+
+        (not addAction.invoked && not updateAction.invoked)
+        |> shouldEqual true
+    
+    [<Fact>]
+    let ``Should *Return error and *Not-Invoke 'addCartItem' and 'updateCart' when given a quantity less than 1``() =
+        let (updateAction, updateCart) = getCommand ()
+        let (addAction, addToCart) = getCommand ()
+        let actor = function
+            | AddItem _ -> addToCart ()
+            | UpdateQuantity _ -> updateCart ()
+            | _ -> invalidOp "cannot call this method"
+
+        (UserID userID, WineID fakeID, 0us)
         |> addItemToCart getEmptyCart getNoWine actor
         |> shouldBeError
 
@@ -44,7 +60,7 @@ module CustomerCommands =
             | UpdateQuantity _ -> updateCart ()
             |_ -> invalidOp "cannot call this method"
 
-        (UserID userID, WineID fakeID)
+        (UserID userID, WineID fakeID, 1us)
         |> addItemToCart getEmptyCart getSomeWine actor
         |> shouldBeOk
 
@@ -60,7 +76,7 @@ module CustomerCommands =
             | UpdateQuantity _ -> updateCart ()
             |_ -> invalidOp "cannot call this method"
 
-        (UserID userID, WineID fakeID)
+        (UserID userID, WineID fakeID, 1us)
         |> addItemToCart getNoCart getSomeWine actor
         |> shouldBeOk
 
@@ -76,7 +92,7 @@ module CustomerCommands =
             | UpdateQuantity _ -> updateCart ()
             |_ -> invalidOp "cannot call this method"
 
-        (UserID userID, WineID wineID)
+        (UserID userID, WineID fakeID, 3us)
         |> addItemToCart getCartWithItem getSomeWine actor
         |> shouldBeOk
 

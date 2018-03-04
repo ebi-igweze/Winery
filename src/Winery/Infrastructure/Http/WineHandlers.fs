@@ -1,6 +1,6 @@
 module Http.Wines
 
-open Storage.InMemory
+open Storage.Models
 open Winery
 open Microsoft.AspNetCore.Http
 open Giraffe
@@ -11,8 +11,8 @@ type RouteFormat<'a> = Printf.TextWriterFormat<'a>
 let getWines categoryId: HttpHandler = 
     fun (next: HttpFunc) (ctx: HttpContext) ->
         task {
-            let store = ctx.GetService<Storage> ()
-            let response = store.getWinesInCategory (CategoryID categoryId)
+            let queries = ctx.GetService<WineQueries> ()
+            let response = queries.getWinesInCategory (CategoryID categoryId)
             return! match response with
                     | Some w -> json w next ctx
                     | None -> notFound next ctx
@@ -22,8 +22,8 @@ let getWine (categoryStringId: string, idString: string) =
     fun (next: HttpFunc) (ctx: HttpContext) ->
         task {
             let categoryId, id = Guid categoryStringId, Guid idString
-            let store = ctx.GetService<Storage> ()
-            let response = store.getWineInCategoryById (CategoryID categoryId) (WineID id)
+            let queries = ctx.GetService<WineQueries> ()
+            let response = queries.getWineInCategoryById (CategoryID categoryId) (WineID id)
             return! match response with
                     | Some w -> json w next ctx
                     | None -> notFound next ctx
@@ -34,8 +34,8 @@ let getWineWithName (categoryStringId:string) =
         task {
             let categoryId = Guid categoryStringId 
             let name = ctx.GetQueryStringValue("name") |> function Ok n -> n | _ -> ""
-            let store = ctx.GetService<Storage> ()
-            let response = store.getWineInCategoryByName (CategoryID categoryId) (WineName name)
+            let queries = ctx.GetService<WineQueries> ()
+            let response = queries.getWineInCategoryByName (CategoryID categoryId) (WineName name)
             return! match response with
                     | Some w -> json w next ctx
                     | None -> notFound next ctx
@@ -46,11 +46,13 @@ let postWine (categoryStringId: string): HttpHandler =
         task {
             let! newWine = ctx.BindJsonAsync<NewWine>()
             let categoryId = CategoryID (Guid categoryStringId)
-            let store = ctx.GetService<Storage>()
-            return! match store.getCategoryById categoryId with
+            let categoryQueries = ctx.GetService<CategoryQueries>()
+            let wineQueries = ctx.GetService<WineQueries>()
+            let wineCommands = ctx.GetService<WineCommands>() 
+            return! match categoryQueries.getCategoryById categoryId with
                     | None -> notFound next ctx
                     | Some _ ->
-                        let addWine = addWineWith store.getCategoryById store.getWineByName store.addWine
+                        let addWine = addWineWith categoryQueries.getCategoryById wineQueries.getWineByName wineCommands.addWine
                         match (addWine <| (fakeAdmin, categoryId, newWine)) with
                         | Ok (WineID id) -> createdM (id.ToString("N"))  next ctx
                         | Error e -> handleError e next ctx
@@ -60,11 +62,14 @@ let deleteWine (categoryStringId: string, idString: string): HttpHandler =
     fun (next: HttpFunc) (ctx: HttpContext) ->
         task {
             let categoryId, wineId = Guid categoryStringId, Guid idString
-            let store = ctx.GetService<Storage>()
-            return! match store.getCategoryById (CategoryID categoryId) with
+            let categoryQueries = ctx.GetService<CategoryQueries>()
+            let wineQueries = ctx.GetService<WineQueries>()
+            let wineCommands = ctx.GetService<WineCommands>() 
+            return! match categoryQueries.getCategoryById (CategoryID categoryId) with
                     | None -> notFound next ctx
                     | Some _ -> 
-                        match (removeWineWith store.getWineById store.deleteWine <| (fakeAdmin, WineID wineId)) with
+                        let removeWine = removeWineWith wineQueries.getWineById wineCommands.deleteWine
+                        match (removeWine <| (fakeAdmin, WineID wineId)) with
                         | Ok _ -> noContent next ctx
                         | Error e -> handleError e next ctx 
         }
@@ -82,20 +87,22 @@ let putWine (categoryStringId: string, idString: string): HttpHandler =
         task {
             let! editInfo = ctx.BindJsonAsync<EditInfo>()
             let categoryId, wineId = Guid categoryStringId, Guid idString
-            let store = ctx.GetService<Storage>()
-            return! match store.getCategoryById (CategoryID categoryId) with
+            let categoryQueries = ctx.GetService<CategoryQueries>()
+            let wineQueries = ctx.GetService<WineQueries>()
+            let wineCommands = ctx.GetService<WineCommands>() 
+            return! match categoryQueries.getCategoryById (CategoryID categoryId) with
                     | None -> notFound next ctx
                     | Some _ -> 
                         let getWineByIdOrName =  function
-                            | ID wineId -> store.getWineById wineId
-                            | Name wineName -> store.getWineByName wineName
+                            | ID wineId -> wineQueries.getWineById wineId
+                            | Name wineName -> wineQueries.getWineByName wineName
 
                         let editWine = 
                             { EditWine.name=hasValue editInfo.name id; description=hasValue editInfo.description id;
                               price=hasValue editInfo.price Decimal.Parse; imagePath=hasValue editInfo.imagePath id;
                               categoryID=hasValue editInfo.categoryID Guid; year=hasValue editInfo.year Int32.Parse }
 
-                        let updateWine = (editWineWith store.getCategoryById getWineByIdOrName store.updateWine)
+                        let updateWine = (editWineWith categoryQueries.getCategoryById getWineByIdOrName wineCommands.updateWine)
                         match (updateWine <| (fakeAdmin, WineID wineId, editWine)) with
                         | Ok _ -> noContent next ctx
                         | Error e -> handleError e next ctx  

@@ -5,24 +5,6 @@ open System.Collections.Generic
 open Winery
 open System
 
-type Storage = 
-    { getCategories             : unit -> ExistingCategory list
-      getCategoryById           : CategoryID -> ExistingCategory option
-      getCategoryByName         : CategoryName -> ExistingCategory option
-      addCategory               : CategoryID * NewCategory -> unit option
-      updateCategory            : CategoryID * EditCategory -> unit option
-      deleteCategory            : CategoryID -> unit option
-
-      getWines                  : unit -> ExistingWine list
-      getWineById               : WineID -> ExistingWine option
-      getWineByName             : WineName -> ExistingWine option
-      getWinesInCategory         : CategoryID -> ExistingWine list option
-      getWineInCategoryById     : CategoryID -> WineID -> ExistingWine option
-      getWineInCategoryByName   : CategoryID -> WineName -> ExistingWine option
-      addWine                   : CategoryID * WineID * NewWine -> unit option
-      updateWine                : WineID * EditWine -> unit option
-      deleteWine                : WineID -> unit option }
-
 type Wine() =
     member val id = defaultof<Guid> with get, set
     member val name = "" with get, set
@@ -37,8 +19,11 @@ type Category() =
     member val name = ""  with get, set
     member val description = "" with get, set
     member val wines = List<Wine>() with get, set
+
+type CartItem = { mutable id: Guid; mutable product: ExistingWine; mutable quantity: uint16 }
+type Cart = { userId: Guid; items: List<CartItem> }
     
-type InMemoryStore = { categories:  List<Category> }
+type InMemoryStore = { categories: List<Category>; carts: List<Cart> }
 
 /////////////////////////
 ////  Type Transforms
@@ -47,7 +32,9 @@ let wineToExistingWine (wine: Wine) = {id=wine.id; categoryID=wine.categoryId; n
 let newWineToWine (categoryID: Guid, id: Guid, newWine: NewWine) = Wine(id=id, categoryId=categoryID, name=newWine.name, description=newWine.description, year=newWine.year, price=newWine.price, imagePath=newWine.imagePath)
 let categoryToExistingCategory (cat: Category) = {id=cat.id; name=cat.name; description=cat.description; wines=cat.wines |> (Seq.map wineToExistingWine >> Seq.toList)}
 let newCategoryToCategory (id: Guid, cat: NewCategory) = Category(id=id, name=cat.name, description=cat.description)
-
+let toCartItem (item: User.CartItem) = {CartItem.id=item.id; product=item.product; quantity=item.quantity}
+let toDomainCartItem (item: CartItem) = {User.CartItem.id=item.id; product=item.product; quantity=item.quantity};
+let toDomainCart (cart: Cart) = {User.Cart.userId=cart.userId; items=cart.items |> Seq.map toDomainCartItem |> Seq.toArray }
 
 /////////////////////////
 ////  Storage Stubs
@@ -60,15 +47,16 @@ let wine1 = Wine(id=wineID1, name="Edone Grand Cuvee Rose", description="A Sampl
 let wine2 = Wine(id=wineID2, name="Raventós i Blanc de Nit", description="A Sample description that will be changed", year=2012, price=24.4m, categoryId=catID, imagePath="img/Sparkling/grand-cuvee.jpg")
 
 let wines = List<Wine>()
-wines.Add(wine1)
-wines.Add(wine2)
+do wines.Add(wine1)
+do wines.Add(wine2)
 
 let category = Category(id=catID, name="Sparkling", description="A very fizzy type of wine, with Champagne as a typical example.", wines=wines)
 let categories = List<Category>()
-categories.Add(category)
+do categories.Add(category)
 
-let storage = { categories=categories }
+let carts = List<Cart>()
 
+let storage = { categories=categories; carts=carts }
 
 /////////////////////////
 ////  Queries
@@ -121,6 +109,10 @@ let private queryWineInCategoryById =
 let private queryWineInCategoryByName = 
     fun (catId) (WineName wineName) ->
         queryWineInCategoryByCriteria catId (fun w -> w.name = wineName)
+
+let private queryUserCart =
+    fun (userId) ->
+        storage.carts |> Seq.tryFind (fun c -> c.userId = userId)
 
 
 /////////////////////////
@@ -188,6 +180,33 @@ let private updateWine =
         |> queryWineById
         |> Option.map (update editWine)
 
+let private addCartItem =
+    fun (UserID userId, cartItem) ->
+        userId
+        |> queryUserCart
+        |> (function 
+             | Some cart -> (cart.items.Add << toCartItem) cartItem
+             | None ->  cartItem |> toCartItem |> fun item -> {userId=userId; items=List<CartItem>([item]) } |>  storage.carts.Add)
+        |> Some
+
+let private removeCartItem = 
+    fun (UserID userId, ItemID cartItemId) ->
+        userId
+        |> queryUserCart
+        |> Option.bind (fun cart ->
+            cart.items
+            |> Seq.tryFind (fun item -> item.id = cartItemId)
+            |> Option.map cart.items.Remove 
+            |> Option.map ignore )
+
+let private updateQuantity = 
+    fun (UserID userId, ItemID cartItemId, quantity) ->
+        userId
+        |> queryUserCart
+        |> Option.bind (fun cart ->
+            cart.items
+            |> Seq.tryFind (fun item -> item.id = cartItemId)
+            |> Option.map (fun  item -> item.quantity <- quantity) )
 
 /////////////////////////
 ////  Query Stubs
@@ -217,24 +236,36 @@ let private getWineInCategoryById = fun catId wineId -> (catId,wineId) ||> query
 
 let private getWineInCategoryByName = fun catId wineName -> (catId, wineName) ||> queryWineInCategoryByName |> Option.map wineToExistingWine
 
+let private getUserCart = fun (UserID userId) -> userId |> queryUserCart |> Option.map toDomainCart
 
 /////////////////////////
-////  In Memory Store
+////  In Memory Models
 /////////////////////////
-let dataStore: Storage = 
+let categoryQueries: CategoryQueries = 
     { getCategoryById = getCategoryById
       getCategoryByName = getCategoryByName
-      getCategories = getCategories 
-      addCategory = addCategory
-      updateCategory = updateCategory
-      deleteCategory = removeCategory
+      getCategories = getCategories }
 
-      getWines = getWines
+let categoryCommands: CategoryCommands =
+    { addCategory = addCategory
+      updateCategory = updateCategory
+      deleteCategory = removeCategory }
+
+let wineQueries: WineQueries = 
+    { getWines = getWines
       getWineById = getWineById
       getWineByName = getWineByName
       getWinesInCategory = getWinesInCategory
       getWineInCategoryByName = getWineInCategoryByName
-      getWineInCategoryById = getWineInCategoryById
-      addWine = addWine
+      getWineInCategoryById = getWineInCategoryById }
+
+let wineCommands: WineCommands =
+    { addWine = addWine
       updateWine = updateWine
       deleteWine = removeWine }
+
+let cartQuery: CartQuery = getUserCart
+let cartCommand: CartCommand = function 
+    | AddItem (userId, cartItem) -> addCartItem (userId, cartItem)
+    | RemoveItem (userId, itemId) -> removeCartItem (userId, itemId)
+    | UpdateQuantity (userId, itemId, quantity) -> updateQuantity (userId, itemId, quantity)

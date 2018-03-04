@@ -10,6 +10,20 @@ open Giraffe
 open Http.Categories
 open Http.Wines
 open Storage.InMemory
+open Http.Cart
+
+
+// ---------------------------------
+// Register app services
+// ---------------------------------
+type IServiceCollection with
+    member this.AddWineryServices() =
+        this.AddSingleton(cartQuery)          |> ignore
+        this.AddSingleton(cartCommand)        |> ignore
+        this.AddSingleton(wineQueries)        |> ignore
+        this.AddSingleton(wineCommands)       |> ignore
+        this.AddSingleton(categoryQueries)    |> ignore
+        this.AddSingleton(categoryCommands)   |> ignore
 
 // ---------------------------------
 // Web app
@@ -21,6 +35,7 @@ let webApp =
             (choose [
                 categoryHttpHandlers
                 wineHttpHandlers
+                cartHttpHandlers
             ])
         setStatusCode 404 >=> text "Not Found" ]
 
@@ -51,9 +66,9 @@ let configureApp (app : IApplicationBuilder) =
         .UseGiraffe(webApp)
 
 let configureServices (services : IServiceCollection) =
-    services.AddCors()                  |> ignore
-    services.AddGiraffe()               |> ignore
-    services.AddSingleton(dataStore)    |> ignore
+    services.AddCors()              |> ignore
+    services.AddGiraffe()           |> ignore
+    services.AddWineryServices()    |> ignore
 
 let configureLogging (builder : ILoggingBuilder) =
     let filter (l : LogLevel) = l.Equals LogLevel.Error

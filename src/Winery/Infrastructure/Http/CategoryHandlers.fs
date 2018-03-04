@@ -3,21 +3,21 @@ module Http.Categories
 open Giraffe
 open Microsoft.AspNetCore.Http
 open Winery
-open Storage.InMemory
+open Storage.Models
 
 let getCategories: HttpHandler =
     fun (next: HttpFunc) (ctx: HttpContext) ->
         task {
-            let store = ctx.GetService<Storage>()
-            let response = store.getCategories()
+            let queries = ctx.GetService<CategoryQueries>()
+            let response = queries.getCategories()
             return! json response next ctx
         }
 
 let getCategory id =
   fun (next: HttpFunc) (ctx: HttpContext) ->
         task {
-            let store = ctx.GetService<Storage>()
-            return! match store.getCategoryById (CategoryID id) with
+            let queries = ctx.GetService<CategoryQueries>()
+            return! match queries.getCategoryById (CategoryID id) with
                     | Some c -> json c next ctx
                     | None -> notFound next ctx
         }
@@ -25,8 +25,10 @@ let getCategory id =
 let deleteCategory id = 
     fun (next: HttpFunc) (ctx: HttpContext) ->
         task {
-            let store = ctx.GetService<Storage>()
-            return! match (removeCategoryWith store.getCategoryById store.deleteCategory <| (fakeAdmin, CategoryID id)) with
+            let queries = ctx.GetService<CategoryQueries>()
+            let commands = ctx.GetService<CategoryCommands>()
+            let removeCategory = removeCategoryWith queries.getCategoryById commands.deleteCategory 
+            return! match (removeCategory <| (fakeAdmin, CategoryID id)) with
                     | Ok _ -> noContent next ctx
                     | Error e -> handleError e next ctx
         }
@@ -37,13 +39,14 @@ let putCategory categoryId =
     fun (next: HttpFunc) (ctx: HttpContext) ->
         task {
             let! editInfo = ctx.BindJsonAsync<EditInfo>()
-            let store = ctx.GetService<Storage>()
+            let queries = ctx.GetService<CategoryQueries>()
+            let commands = ctx.GetService<CategoryCommands>()
             let editCategory = {EditCategory.name=hasValue editInfo.name id; description=hasValue editInfo.description id}
             let getCategoryByIdOrName = function
-                | ID categoryId -> store.getCategoryById categoryId
-                | Name categoryName -> store.getCategoryByName categoryName
+                | ID categoryId -> queries.getCategoryById categoryId
+                | Name categoryName -> queries.getCategoryByName categoryName
 
-            let updateCategory = editCategoryWith getCategoryByIdOrName store.updateCategory
+            let updateCategory = editCategoryWith getCategoryByIdOrName commands.updateCategory
             return! match (updateCategory <| (fakeAdmin, CategoryID categoryId, editCategory)) with
                     | Ok _ -> noContent next ctx
                     | Error e -> handleError e next ctx
@@ -53,8 +56,9 @@ let postCategory: HttpHandler =
     fun (next: HttpFunc) (ctx: HttpContext) ->
         task {
             let! newCategory = ctx.BindJsonAsync<NewCategory>()
-            let store = ctx.GetService<Storage>()
-            return! match (addCategoryWith store.getCategoryByName store.addCategory <| (fakeAdmin, newCategory)) with
+            let queries = ctx.GetService<CategoryQueries>()
+            let commands = ctx.GetService<CategoryCommands>()
+            return! match (addCategoryWith queries.getCategoryByName commands.addCategory <| (fakeAdmin, newCategory)) with
                     | Ok (CategoryID id) -> createdM (id.ToString("N")) next ctx
                     | Error e -> handleError e next ctx
         }

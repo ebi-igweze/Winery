@@ -72,6 +72,7 @@ let updateItemQuantityInCart getCart (updateCart: CartAction -> _ option): UserO
         let updateQuantity = 
             Ok
             >> Result.bind (isExistingCartItem getCart)
+            >> Result.bind (fun _ -> if quantity < 1us then invalidUserOp "Item quantity cannot be less than 1" else Ok () )
             >> Result.bind (fun _ -> 
                 let update = (userId, itemId, quantity)
                 match update |> (UpdateQuantity >> updateCart) with
@@ -79,19 +80,22 @@ let updateItemQuantityInCart getCart (updateCart: CartAction -> _ option): UserO
                 | Some _ -> Ok ())
         updateQuantity (userId, itemId)
         
-let addItemToCart getCart (getWine: WineID -> ExistingWine option) (updateCart: CartAction -> _ option): UserOperation<UserID * WineID, unit> =
-    fun (userId, wineId) ->
+let addItemToCart getCart (getWine: WineID -> ExistingWine option) (updateCart: CartAction -> _ option): UserOperation<UserID * WineID * uint16, unit> =
+    fun (userId, wineId, quantity) ->
         let (WineID wId) = wineId
         let addItem (wine: ExistingWine) = 
             let itemId = ItemID wine.id
             let createAndAddNewItem wine = 
-                let newItem = {id=Guid.NewGuid(); quantity=1us; product=wine;}
+                let newItem = {id=Guid.NewGuid(); quantity=quantity; product=wine;}
                 match (userId, newItem) |> (AddItem >> updateCart) with
                 | None -> systemError (unableTo "add item")
                 | Some _ -> Ok ()
             match isExistingCartItem getCart (userId, itemId) with
-            | Ok item -> updateItemQuantityInCart getCart updateCart (userId, itemId, item.quantity + 1us)
-            | Error _ -> createAndAddNewItem wine                
+            | Ok item -> updateItemQuantityInCart getCart updateCart (userId, itemId, item.quantity + quantity)
+            | Error _ -> 
+                if (quantity < 1us)
+                then invalidUserOp ("Item quantity cannot be less than 1")             
+                else createAndAddNewItem wine  
 
         match getWine wineId with
         | None -> invalidUserOp (sprintf "A wine with id '%O' does not exist" wId)
