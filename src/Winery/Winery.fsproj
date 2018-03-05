@@ -10,11 +10,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="BCrypt.Net-Core" Version="1.4.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="2.0.1" />
     <PackageReference Include="Microsoft.AspNetCore.Cors" Version="2.0.*" />
     <PackageReference Include="Microsoft.AspNetCore.Hosting" Version="2.0.*" />
     <PackageReference Include="Microsoft.AspNetCore.Diagnostics" Version="2.0.*" />
     <PackageReference Include="Microsoft.AspNetCore.Server.Kestrel" Version="2.0.*" />
-    <PackageReference Include="Microsoft.AspNetCore.Server.IISIntegration" Version="2.0.*"/>
+    <PackageReference Include="Microsoft.AspNetCore.Server.IISIntegration" Version="2.0.*" />
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="2.0.*" />
     <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="2.0.*" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="2.0.*" />
@@ -26,7 +28,9 @@
     <Compile Include="Domain/User.fs" />
     <Compile Include="Infrastructure/Storage/Models.fs" />
     <Compile Include="Infrastructure/Storage/InMemory.fs" />
+    <Compile Include="Infrastructure/Services/Models.fs" />
     <Compile Include="Infrastructure/Http/Helpers.fs" />
+    <Compile Include="Infrastructure/Http/Auth.fs" />
     <Compile Include="Infrastructure/Http/CategoryHandlers.fs" />
     <Compile Include="Infrastructure/Http/WineHandlers.fs" />
     <Compile Include="Infrastructure/Http/CartHandlers.fs" />

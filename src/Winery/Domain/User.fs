@@ -5,8 +5,23 @@ open System
 type UserRole = 
 | Customer
 | Administrator
+    with override this.ToString () = 
+            match this with
+            | Customer -> "customer"
+            | Administrator -> "admin"
 
-type User =
+type NewUser =
+    { email: string
+      firstName: string
+      lastName: string
+      role: UserRole }
+
+type EditUser =
+    { email: string option
+      firstName: string option
+      lastName: string option }
+
+type ExistingUser =
     { id: Guid
       email: string
       firstName: string
@@ -30,9 +45,11 @@ type OrderItem =
 
 type Order =
     { id: Guid
-      user: User 
+      user: ExistingUser 
       items: OrderItem [] }
 
+type Password = Password of string
+type UserName = UserName of string
 
 type UserID = UserID of Guid
 type ItemID = ItemID of Guid
@@ -52,6 +69,20 @@ type UserOperation<'T, 'U> = 'T -> Result<'U, OperationError>
 let invalidUserOp s = s |> (InvalidOp >> Error)
 let unauthorizedUserOp s = s |> (Unauthorized >> Error)
 let systemError s = s |> (SystemError >> Error)
+
+///////////////////////////////////////////////////
+//// Customer Operation  
+///////////////////////////////////////////////////
+let addUser getUser addUser: UserOperation<NewUser * Password, unit> = 
+    fun (user, password) ->
+        match getUser (UserName user.email) with
+        | Some _ -> invalidUserOp "A user with this username already exists"
+        | None -> 
+            let userId = Guid.NewGuid()
+            match addUser (UserID userId, user, password) with
+            | Some _ -> Ok ()
+            | None -> systemError (unableTo "create new user")
+
 
 ///////////////////////////////////////////////////
 //// Customer Operation  
@@ -132,7 +163,7 @@ let private validateAdmin =
     let isAdmin user = user.role |> function | Administrator -> true | _ -> false
     errorIf (not << isAdmin) (Unauthorized "unauthorized access")
 
-let addCategoryWith getCategory addCategory: UserOperation<User * NewCategory, CategoryID> =
+let addCategoryWith getCategory addCategory: UserOperation<ExistingUser * NewCategory, CategoryID> =
     fun (user, newCategory) ->
         let addWith = 
             Ok
@@ -144,7 +175,7 @@ let addCategoryWith getCategory addCategory: UserOperation<User * NewCategory, C
                 | None -> systemError (unableTo "add new category") )
         addWith user
 
-let editCategoryWith getCategory updateCategory: UserOperation<User * CategoryID * EditCategory, unit> =
+let editCategoryWith getCategory updateCategory: UserOperation<ExistingUser * CategoryID * EditCategory, unit> =
     fun (user, categoryID, editCategory) ->
         let editWith = 
             Ok
@@ -156,7 +187,7 @@ let editCategoryWith getCategory updateCategory: UserOperation<User * CategoryID
                 | None -> systemError (unableTo "update category") )
         editWith user
 
-let removeCategoryWith getCategory deleteCategory: UserOperation<User * CategoryID, unit> =
+let removeCategoryWith getCategory deleteCategory: UserOperation<ExistingUser * CategoryID, unit> =
     fun (user, categoryID) ->
         let removeWith =
             Ok
@@ -168,7 +199,7 @@ let removeCategoryWith getCategory deleteCategory: UserOperation<User * Category
                 | None -> systemError (unableTo "delete category") )
         removeWith user
 
-let addWineWith getCategory getWine addWine: UserOperation<User * CategoryID * NewWine, WineID> =
+let addWineWith getCategory getWine addWine: UserOperation<ExistingUser * CategoryID * NewWine, WineID> =
     fun (user, categoryID, newWine) ->
         let addWith = 
             Ok
@@ -180,7 +211,7 @@ let addWineWith getCategory getWine addWine: UserOperation<User * CategoryID * N
                 | None -> systemError (unableTo "add new wine") )
         addWith user
 
-let removeWineWith getWine deleteWine: UserOperation<User * WineID, unit> =
+let removeWineWith getWine deleteWine: UserOperation<ExistingUser * WineID, unit> =
     fun (user, wineID) ->
         let removeWith = 
             Ok
@@ -192,7 +223,7 @@ let removeWineWith getWine deleteWine: UserOperation<User * WineID, unit> =
                 | None -> systemError (unableTo "delete wine") )
         removeWith user
 
-let editWineWith getCategory getWine updateWine: UserOperation<User * WineID * EditWine, unit> =
+let editWineWith getCategory getWine updateWine: UserOperation<ExistingUser * WineID * EditWine, unit> =
     fun (user, wineID, editWine) ->
         let editWith =
             Ok
@@ -204,7 +235,7 @@ let editWineWith getCategory getWine updateWine: UserOperation<User * WineID * E
                 | None -> systemError (unableTo "update wine") )
         editWith user
 
-let editQuantityWith getWine setQuantity: UserOperation<User * WineID * uint16, unit> = 
+let editQuantityWith getWine setQuantity: UserOperation<ExistingUser * WineID * uint16, unit> = 
     fun (user, wineID, quantity) ->
         let editWith = 
             Ok

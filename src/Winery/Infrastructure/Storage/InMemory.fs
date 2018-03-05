@@ -1,40 +1,49 @@
 module Storage.InMemory
 
-open Microsoft.FSharp.Core.Operators.Unchecked
 open System.Collections.Generic
 open Winery
 open System
 
-type Wine() =
-    member val id = defaultof<Guid> with get, set
-    member val name = "" with get, set
-    member val description = "" with get, set
-    member val year=0 with get, set
-    member val price=0m with get, set
-    member val categoryId = defaultof<Guid> with get, set
-    member val imagePath = "" with get, set
+type Wine = 
+    { mutable id: Guid
+      mutable name: string
+      mutable description: string
+      mutable year: int32
+      mutable price: decimal
+      mutable categoryId: Guid
+      mutable imagePath: string }
 
-type Category() =
-    member val id = defaultof<Guid> with get, set
-    member val name = ""  with get, set
-    member val description = "" with get, set
-    member val wines = List<Wine>() with get, set
+type Category = 
+    { mutable id: Guid
+      mutable name: string
+      mutable description: string
+      mutable wines: List<Wine> }
+
+type User = 
+    { mutable id: Guid
+      mutable email: string
+      mutable lastName: string
+      mutable firstName: string
+      mutable role: string
+      mutable password: string }
 
 type CartItem = { mutable id: Guid; mutable product: ExistingWine; mutable quantity: uint16 }
 type Cart = { userId: Guid; items: List<CartItem> }
     
-type InMemoryStore = { categories: List<Category>; carts: List<Cart> }
+type InMemoryStore = { categories: List<Category>; carts: List<Cart>; users: List<User> }
 
 /////////////////////////
 ////  Type Transforms
 /////////////////////////
-let wineToExistingWine (wine: Wine) = {id=wine.id; categoryID=wine.categoryId; name=wine.name; description=wine.description; year=wine.year; price=wine.price; imagePath=wine.imagePath}
-let newWineToWine (categoryID: Guid, id: Guid, newWine: NewWine) = Wine(id=id, categoryId=categoryID, name=newWine.name, description=newWine.description, year=newWine.year, price=newWine.price, imagePath=newWine.imagePath)
-let categoryToExistingCategory (cat: Category) = {id=cat.id; name=cat.name; description=cat.description; wines=cat.wines |> (Seq.map wineToExistingWine >> Seq.toList)}
-let newCategoryToCategory (id: Guid, cat: NewCategory) = Category(id=id, name=cat.name, description=cat.description)
-let toCartItem (item: User.CartItem) = {CartItem.id=item.id; product=item.product; quantity=item.quantity}
-let toDomainCartItem (item: CartItem) = {User.CartItem.id=item.id; product=item.product; quantity=item.quantity};
-let toDomainCart (cart: Cart) = {User.Cart.userId=cart.userId; items=cart.items |> Seq.map toDomainCartItem |> Seq.toArray }
+let wineToExistingWine (wine: Wine) = {id=wine.id; categoryID=wine.categoryId; name=wine.name; description=wine.description; year=wine.year; price=wine.price; imagePath=wine.imagePath }
+let newWineToWine (categoryID: Guid, id: Guid, newWine: NewWine) = { Wine.id=id; categoryId=categoryID; name=newWine.name; description=newWine.description; year=newWine.year; price=newWine.price; imagePath=newWine.imagePath }
+let categoryToExistingCategory (cat: Category) = { ExistingCategory.id=cat.id; name=cat.name; description=cat.description; wines=cat.wines |> (Seq.map wineToExistingWine >> Seq.toList) }
+let newCategoryToCategory (id: Guid, cat: NewCategory) = { Category.id=id; name=cat.name; description=cat.description; wines=List<Wine>() }
+let toCartItem (item: User.CartItem) = { CartItem.id=item.id; product=item.product; quantity=item.quantity }
+let toDomainCartItem (item: CartItem) = { User.CartItem.id=item.id; product=item.product; quantity=item.quantity }
+let toDomainCart (cart: Cart) = { User.Cart.userId=cart.userId; items=cart.items |> Seq.map toDomainCartItem |> Seq.toArray }
+let userToExistingUser (user: User) = { ExistingUser.id = user.id; firstName = user.firstName; lastName = user.lastName; email = user.email; role = user.role |> function "admin" -> Administrator | _ -> Customer }
+let newUserToUser (id, user: NewUser, password) = { email = user.email; id = id; firstName = user.firstName; lastName = user.lastName; password = password; role = user.role |> function Administrator -> "admin" | _ -> "customer" }
 
 /////////////////////////
 ////  Storage Stubs
@@ -43,36 +52,43 @@ let wineID1 = Guid("2a6c918595d94d8c80a6575f99c2a716")
 let wineID2 = Guid("699fb6e489774ab6ae892b7702556eba")
 let catID = Guid("4ec87f064d1e41b49342ab1aead1f99d")
 
-let wine1 = Wine(id=wineID1, name="Edone Grand Cuvee Rose", description="A Sample descripition that will be changed", year=2014, price=14.4m, categoryId=catID, imagePath="img/Sparkling/grand-cuvee.jpg")
-let wine2 = Wine(id=wineID2, name="Raventós i Blanc de Nit", description="A Sample description that will be changed", year=2012, price=24.4m, categoryId=catID, imagePath="img/Sparkling/grand-cuvee.jpg")
+let wine1 = { Wine.id=wineID1; name="Edone Grand Cuvee Rose"; description="A Sample descripition that will be changed"; year=2014; price=14.4m; categoryId=catID; imagePath="img/Sparkling/grand-cuvee.jpg" }
+let wine2 = { Wine.id=wineID2; name="Raventós i Blanc de Nit"; description="A Sample description that will be changed"; year=2012; price=24.4m; categoryId=catID; imagePath="img/Sparkling/grand-cuvee.jpg" }
 
+// create and add list of wines
 let wines = List<Wine>()
 do wines.Add(wine1)
 do wines.Add(wine2)
 
-let category = Category(id=catID, name="Sparkling", description="A very fizzy type of wine, with Champagne as a typical example.", wines=wines)
+// create and add list of categories
+let category = { Category.id=catID; name="Sparkling"; description="A very fizzy type of wine; with Champagne as a typical example."; wines=wines }
 let categories = List<Category>()
 do categories.Add(category)
 
+// create list of carts
 let carts = List<Cart>()
 
-let storage = { categories=categories; carts=carts }
+// create list of users
+let users = List<User>()
+
+// create In-Memory Storage
+let storage = { categories=categories; carts=carts; users=users }
 
 /////////////////////////
 ////  Queries
 /////////////////////////
 
-let queryCategoryById  = fun (CategoryID catId) -> 
+let private queryCategoryById  = fun (CategoryID catId) -> 
     storage.categories
     |> Seq.where (fun c -> c.id = catId)
     |> Seq.tryHead
 
-let queryCategoryByName = fun (CategoryName catName) ->
+let private queryCategoryByName = fun (CategoryName catName) ->
     storage.categories
     |> Seq.where (fun c -> c.name = catName)
     |> Seq.tryHead
 
-let queryWineByName =
+let private queryWineByName =
     fun (WineName name) ->
         storage.categories
         |> Seq.map (fun c -> c.wines)
@@ -113,6 +129,14 @@ let private queryWineInCategoryByName =
 let private queryUserCart =
     fun (userId) ->
         storage.carts |> Seq.tryFind (fun c -> c.userId = userId)
+
+let private queryUserByName = 
+    fun (UserName name) ->
+        storage.users |> Seq.tryFind (fun u -> u.email = name)
+
+let private queryUserById = 
+    fun (UserID id) ->
+        storage.users |> Seq.tryFind (fun u -> u.id = id)
 
 
 /////////////////////////
@@ -208,6 +232,20 @@ let private updateQuantity =
             |> Seq.tryFind (fun item -> item.id = cartItemId)
             |> Option.map (fun  item -> item.quantity <- quantity) )
 
+let private addUser = 
+    fun (UserID id, newUser, Password password) ->
+        (id,newUser,password) |> newUserToUser |> storage.users.Add |> Some
+
+let private updateUser =
+    let update (editUser: EditUser) (user: User) = 
+        if (editUser.email.IsSome) then user.email <- editUser.email.Value
+        if (editUser.firstName.IsSome) then user.firstName <- editUser.firstName.Value
+        if (editUser.lastName.IsSome) then user.lastName <- editUser.lastName.Value
+
+    fun (userId, editUser) ->
+        userId |> queryUserById |> Option.map (update editUser)
+        
+
 /////////////////////////
 ////  Query Stubs
 /////////////////////////
@@ -237,6 +275,8 @@ let private getWineInCategoryById = fun catId wineId -> (catId,wineId) ||> query
 let private getWineInCategoryByName = fun catId wineName -> (catId, wineName) ||> queryWineInCategoryByName |> Option.map wineToExistingWine
 
 let private getUserCart = fun (UserID userId) -> userId |> queryUserCart |> Option.map toDomainCart
+
+let private getUserByName = fun (userName) -> userName |> queryUserByName |> Option.map (fun user -> (userToExistingUser user, Password user.password))
 
 /////////////////////////
 ////  In Memory Models
@@ -269,3 +309,6 @@ let cartCommand: CartCommand = function
     | AddItem (userId, cartItem) -> addCartItem (userId, cartItem)
     | RemoveItem (userId, itemId) -> removeCartItem (userId, itemId)
     | UpdateQuantity (userId, itemId, quantity) -> updateQuantity (userId, itemId, quantity)
+
+let userQuery: UserQueries = { getUser = getUserByName }
+let userCommands: UserCommands = { addUser = addUser }

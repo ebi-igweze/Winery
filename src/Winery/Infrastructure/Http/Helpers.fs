@@ -5,7 +5,7 @@ open Giraffe
 open Winery
 open Microsoft.AspNetCore.Http
 
-let fakeAdmin: User = { id=System.Guid(); email=""; firstName=""; lastName=""; role=Administrator }
+let fakeAdmin: ExistingUser = { id=System.Guid(); email=""; firstName=""; lastName=""; role=Administrator }
 
 let created: HttpHandler = setStatusCode 201
 

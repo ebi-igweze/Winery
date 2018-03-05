@@ -28,3 +28,5 @@ type WineCommands =
 
 type CartQuery = UserID -> Cart option
 type CartCommand = CartAction -> unit option
+type UserQueries = { getUser: UserName -> (ExistingUser * Password) option }
+type UserCommands = { addUser: UserID * NewUser * Password -> unit option }

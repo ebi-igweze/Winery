@@ -5,6 +5,7 @@ open Winery
 open Microsoft.AspNetCore.Http
 open Giraffe
 open System
+open Http.Auth
 
 type RouteFormat<'a> = Printf.TextWriterFormat<'a> 
 
@@ -115,7 +116,9 @@ let wineHttpHandlers: HttpHandler =
             routeCif "/categories/%s/wines/search" getWineWithName
             routeCif "/categories/%s/wines/%s" getWine
         ]
-        POST    >=> routeCif "/categories/%s/wines" postWine
-        PUT     >=> routeCif "/categories/%s/wines/%s" putWine
-        DELETE  >=> routeCif "/categories/%s/wines/%s" deleteWine
+        subRouteCi "/categories" authorizeAdmin >=> choose [
+            POST    >=> routeCif "/%s/wines" (authorizeAdminWithArgs << postWine)
+            PUT     >=> routeCif "/%s/wines/%s" (authorizeAdminWithArgs << putWine)
+            DELETE  >=> routeCif "/%s/wines/%s" (authorizeAdminWithArgs << deleteWine)
+        ]
     ])

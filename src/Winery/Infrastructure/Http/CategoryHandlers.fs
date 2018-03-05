@@ -4,6 +4,7 @@ open Giraffe
 open Microsoft.AspNetCore.Http
 open Winery
 open Storage.Models
+open Http.Auth
 
 let getCategories: HttpHandler =
     fun (next: HttpFunc) (ctx: HttpContext) ->
@@ -69,7 +70,7 @@ let categoryHttpHandlers: HttpHandler =
                 routeCi "/categories" >=> getCategories
                 routeCif "/categories/%O"  getCategory
             ]
-            PUT     >=> routeCif "/categories/%O" putCategory
-            POST    >=> routeCi "/categories" >=> postCategory
-            DELETE  >=> routeCif "/categories/%O" deleteCategory
+            PUT     >=> routeCif "/categories/%O" (authorizeAdminWithArgs << putCategory)
+            POST    >=> routeCi "/categories" >=> authorizeAdmin >=> postCategory
+            DELETE  >=> routeCif "/categories/%O" (authorizeAdminWithArgs << deleteCategory)
         ]) 
