@@ -28,15 +28,16 @@ let authOptions (options: AuthenticationOptions) =
     options.DefaultChallengeScheme <- JwtBearerDefaults.AuthenticationScheme
 
 let jwtOptions (options: JwtBearerOptions) =
-    options.SaveToken <- true
-    options.IncludeErrorDetails <- true
-    options.Authority <- "https://ebi.igweze.com"
+    // options.SaveToken <- true
+    // options.IncludeErrorDetails <- true
+    // options.Authority <- "https://ebi.igweze.com"
     options.TokenValidationParameters <- TokenValidationParameters (
-        ValidIssuer = "ebi.igweze.com",
+        ValidateActor = true,
         ValidateAudience = true,
         ValidateLifetime = true,
         ValidateIssuerSigningKey = true,
-        ValidAudience = "localhost:5000",
+        ValidIssuer = "jwtwebapp.net",
+        ValidAudience = "jwtwebapp.net",
         IssuerSigningKey = SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret)) )
 
 
@@ -102,8 +103,8 @@ let configureApp (app : IApplicationBuilder) =
         .UseGiraffe(webApp)
 
 let configureServices (services : IServiceCollection) =
-    services.AddCors()                          |> ignore
     services.AddAuth()                          |> ignore
+    services.AddCors()                          |> ignore
     services.AddGiraffe()                       |> ignore
     services.AddWineryServices()                |> ignore
 

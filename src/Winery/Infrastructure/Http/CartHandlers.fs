@@ -5,6 +5,7 @@ open Giraffe
 open System
 open Storage.Models
 open Winery
+open Http.Auth
 
 
 
@@ -62,8 +63,8 @@ let deleteCartItem (userStringId: string, itemStringId: string): HttpHandler =
 
 let cartHttpHandlers: HttpHandler = 
     (choose [
-        GET     >=> routeCif "/users/%O/cart" getCart
-        POST    >=> routeCif "/users/%O/cart" postCartItem
-        PUT     >=> routeCif "/users/%O/cart" putCartItem
-        DELETE  >=> routeCif "/users/%s/cart/%s" deleteCartItem
+        GET     >=> routeCif "/users/%O/cart" (authenticateArgs << getCart)
+        POST    >=> routeCif "/users/%O/cart" (authenticateArgs << postCartItem)
+        PUT     >=> routeCif "/users/%O/cart" (authenticateArgs << putCartItem)
+        DELETE  >=> routeCif "/users/%s/cart/%s" (authenticateArgs << deleteCartItem)
     ])

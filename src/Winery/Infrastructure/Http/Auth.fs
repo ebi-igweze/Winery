@@ -12,7 +12,7 @@ open Microsoft.AspNetCore.Authentication.JwtBearer
 open Winery
 
 // Handler to return 401 unauthorized challenge request
-let private onError: HttpHandler = (challenge JwtBearerDefaults.AuthenticationScheme)
+let private onError: HttpHandler = fun (next) (ctx) -> json (ctx.User.Identity) next ctx //(challenge JwtBearerDefaults.AuthenticationScheme)
 
 let internal finish : HttpFunc = Some >> Threading.Tasks.Task.FromResult
 
@@ -31,7 +31,6 @@ let private requiresAuthPolicyWithArgs policy authFailedHandler (next : 'T -> Ht
         if policy ctx.User
         then next args ctx
         else authFailedHandler finish ctx
-
 
 let authenticateArgs func =  
     fun (args : 'T) (ctx : HttpContext) ->
@@ -83,8 +82,8 @@ let private generateToken user =
 
         let securityToken = 
             JwtSecurityToken(
-                issuer = "ebi.igweze.com",
-                audience = "localhost:5000",
+                issuer = "authy.net",
+                audience = "authy.net",
                 claims = claims,
                 expires = expiresAt,
                 notBefore = notBefore,
