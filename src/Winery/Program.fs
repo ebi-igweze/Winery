@@ -36,8 +36,8 @@ let jwtOptions (options: JwtBearerOptions) =
         ValidateAudience = true,
         ValidateLifetime = true,
         ValidateIssuerSigningKey = true,
-        ValidIssuer = "jwtwebapp.net",
-        ValidAudience = "jwtwebapp.net",
+        ValidIssuer = "ebi.igweze.com",
+        ValidAudience = "http://localhost:5000/",
         IssuerSigningKey = SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret)) )
 
 
@@ -49,9 +49,9 @@ type IServiceCollection with
         let authService: AuthService = 
             { hashPassword = BCrypt.HashPassword; verify = BCrypt.Verify }
 
-        this.AddSingleton(authService)                          |> ignore
-        this.AddAuthentication(authOptions)
+        this.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             .AddJwtBearer(Action<JwtBearerOptions> jwtOptions)  |> ignore
+        this.AddSingleton(authService)                          |> ignore
 
     member this.AddWineryServices() =
         this.AddSingleton(userQuery)          |> ignore
@@ -97,14 +97,15 @@ let configureCors (builder : CorsPolicyBuilder) =
            |> ignore
 
 let configureApp (app : IApplicationBuilder) =
-    let env = app.ApplicationServices.GetService<IHostingEnvironment>()
-    do app.UseGiraffeErrorHandler(errorHandler)
-        .UseCors(configureCors)
-        .UseGiraffe(webApp)
+    // let env = app.ApplicationServices.GetService<IHostingEnvironment>()
+    do app.UseCors(configureCors)
+          .UseAuthentication()
+          .UseGiraffeErrorHandler(errorHandler)
+          .UseGiraffe(webApp)
 
 let configureServices (services : IServiceCollection) =
-    services.AddAuth()                          |> ignore
     services.AddCors()                          |> ignore
+    services.AddAuth()                          |> ignore
     services.AddGiraffe()                       |> ignore
     services.AddWineryServices()                |> ignore
 

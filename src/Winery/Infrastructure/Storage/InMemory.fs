@@ -68,8 +68,11 @@ do categories.Add(category)
 // create list of carts
 let carts = List<Cart>()
 
+
 // create list of users
+let admin = {id=catID; email="Admin"; firstName="Admin"; lastName="Admin"; role="admin"; password=BCrypt.Net.BCrypt.HashPassword("Admin")}
 let users = List<User>()
+users.Add(admin)
 
 // create In-Memory Storage
 let storage = { categories=categories; carts=carts; users=users }
