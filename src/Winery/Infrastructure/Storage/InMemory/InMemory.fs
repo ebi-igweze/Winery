@@ -289,7 +289,7 @@ let categoryQueries: CategoryQueries =
       getCategoryByName = getCategoryByName
       getCategories = getCategories }
 
-let categoryCommands: CategoryCommands =
+let categoryCommandExecutioners: CategoryCommandExecutioners =
     { addCategory = addCategory
       updateCategory = updateCategory
       deleteCategory = removeCategory }
@@ -302,16 +302,16 @@ let wineQueries: WineQueries =
       getWineInCategoryByName = getWineInCategoryByName
       getWineInCategoryById = getWineInCategoryById }
 
-let wineCommands: WineCommands =
+let wineCommandExecutioners: WineCommandExecutioners =
     { addWine = addWine
       updateWine = updateWine
       deleteWine = removeWine }
 
 let cartQuery: CartQuery = getUserCart
-let cartCommand: CartCommand = function 
+let cartCommand: CartCommandExecutioner = function 
     | AddItem (userId, cartItem) -> addCartItem (userId, cartItem)
     | RemoveItem (userId, itemId) -> removeCartItem (userId, itemId)
     | UpdateQuantity (userId, itemId, quantity) -> updateQuantity (userId, itemId, quantity)
 
 let userQuery: UserQueries = { getUser = getUserByName }
-let userCommands: UserCommands = { addUser = addUser }
+let userCommandExecutioners: UserCommandExecutioners = { addUser = addUser }

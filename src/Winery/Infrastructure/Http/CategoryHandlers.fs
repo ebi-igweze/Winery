@@ -5,6 +5,7 @@ open Microsoft.AspNetCore.Http
 open Winery
 open Storage.Models
 open Http.Auth
+open Services.Models
 
 let getCategories: HttpHandler =
     fun (next: HttpFunc) (ctx: HttpContext) ->
@@ -27,7 +28,7 @@ let deleteCategory id =
     fun (next: HttpFunc) (ctx: HttpContext) ->
         task {
             let queries = ctx.GetService<CategoryQueries>()
-            let commands = ctx.GetService<CategoryCommands>()
+            let commands = ctx.GetService<CategoryCommandReceivers>()
             let removeCategory = removeCategoryWith queries.getCategoryById commands.deleteCategory 
             return! match (removeCategory <| (fakeAdmin, CategoryID id)) with
                     | Ok _ -> noContent next ctx
@@ -41,7 +42,7 @@ let putCategory categoryId =
         task {
             let! editInfo = ctx.BindJsonAsync<EditInfo>()
             let queries = ctx.GetService<CategoryQueries>()
-            let commands = ctx.GetService<CategoryCommands>()
+            let commands = ctx.GetService<CategoryCommandReceivers>()
             let editCategory = {EditCategory.name=hasValue editInfo.name id; description=hasValue editInfo.description id}
             let getCategoryByIdOrName = function
                 | ID categoryId -> queries.getCategoryById categoryId
@@ -58,7 +59,7 @@ let postCategory: HttpHandler =
         task {
             let! newCategory = ctx.BindJsonAsync<NewCategory>()
             let queries = ctx.GetService<CategoryQueries>()
-            let commands = ctx.GetService<CategoryCommands>()
+            let commands = ctx.GetService<CategoryCommandReceivers>()
             return! match (addCategoryWith queries.getCategoryByName commands.addCategory <| (fakeAdmin, newCategory)) with
                     | Ok (CategoryID id) -> createdM (id.ToString("N")) next ctx
                     | Error e -> handleError e next ctx

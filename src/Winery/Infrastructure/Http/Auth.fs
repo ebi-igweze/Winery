@@ -120,9 +120,9 @@ let signUp: HttpHandler =
             let user = { NewUser.email=model.email; firstName=model.firstName; lastName=model.lastName; role=Customer }
             let userQuery = ctx.GetService<UserQueries>()
             let authService = ctx.GetService<AuthService>()
-            let userCommands = ctx.GetService<UserCommands>()
+            let receivers = ctx.GetService<UserCommandReceivers>()
             let hashedPassword = authService.hashPassword(model.password)
-            return! match addUser userQuery.getUser userCommands.addUser (user, Password hashedPassword) with
+            return! match addUser userQuery.getUser receivers.addUser (user, Password hashedPassword) with
                     | Error e -> handleError e next ctx
                     | Ok _ ->  NewUser user |> toUserInfo |> generateToken |> json <|| (next, ctx) 
         }

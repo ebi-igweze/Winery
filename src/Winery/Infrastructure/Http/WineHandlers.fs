@@ -6,6 +6,7 @@ open Microsoft.AspNetCore.Http
 open Giraffe
 open System
 open Http.Auth
+open Services.Models
 
 type RouteFormat<'a> = Printf.TextWriterFormat<'a> 
 
@@ -49,7 +50,7 @@ let postWine (categoryStringId: string): HttpHandler =
             let categoryId = CategoryID (Guid categoryStringId)
             let categoryQueries = ctx.GetService<CategoryQueries>()
             let wineQueries = ctx.GetService<WineQueries>()
-            let wineCommands = ctx.GetService<WineCommands>() 
+            let wineCommands = ctx.GetService<WineCommandReceivers>() 
             return! match categoryQueries.getCategoryById categoryId with
                     | None -> notFound next ctx
                     | Some _ ->
@@ -65,7 +66,7 @@ let deleteWine (categoryStringId: string, idString: string): HttpHandler =
             let categoryId, wineId = Guid categoryStringId, Guid idString
             let categoryQueries = ctx.GetService<CategoryQueries>()
             let wineQueries = ctx.GetService<WineQueries>()
-            let wineCommands = ctx.GetService<WineCommands>() 
+            let wineCommands = ctx.GetService<WineCommandReceivers>() 
             return! match categoryQueries.getCategoryById (CategoryID categoryId) with
                     | None -> notFound next ctx
                     | Some _ -> 
@@ -90,7 +91,7 @@ let putWine (categoryStringId: string, idString: string): HttpHandler =
             let categoryId, wineId = Guid categoryStringId, Guid idString
             let categoryQueries = ctx.GetService<CategoryQueries>()
             let wineQueries = ctx.GetService<WineQueries>()
-            let wineCommands = ctx.GetService<WineCommands>() 
+            let wineCommands = ctx.GetService<WineCommandReceivers>() 
             return! match categoryQueries.getCategoryById (CategoryID categoryId) with
                     | None -> notFound next ctx
                     | Some _ -> 

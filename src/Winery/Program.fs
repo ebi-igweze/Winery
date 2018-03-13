@@ -18,6 +18,9 @@ open Microsoft.AspNetCore.Authentication
 open Microsoft.Extensions.DependencyInjection
 open Microsoft.AspNetCore.Cors.Infrastructure
 open Microsoft.AspNetCore.Authentication.JwtBearer
+open Services.Actors.Storage
+open Akka.FSharp.Spawn
+open Services.Actors.User
 
 // ---------------------------------
 // Configure authentication
@@ -56,12 +59,29 @@ type IServiceCollection with
     member this.AddWineryServices() =
         this.AddSingleton(userQuery)          |> ignore
         this.AddSingleton(cartQuery)          |> ignore
-        this.AddSingleton(cartCommand)        |> ignore
         this.AddSingleton(wineQueries)        |> ignore
-        this.AddSingleton(wineCommands)       |> ignore
-        this.AddSingleton(userCommands)       |> ignore
         this.AddSingleton(categoryQueries)    |> ignore
-        this.AddSingleton(categoryCommands)   |> ignore
+        this.AddSingleton(cartCommand)        |> ignore
+        this.AddMessageReceivers()            |> ignore
+        
+    member private this.AddMessageReceivers() =
+        // create actor system
+        let system = Akka.FSharp.System.create "winery-system" (Akka.FSharp.Configuration.defaultConfig())
+        
+        // create actor refs
+        let wineActorRef = spawn system "wineActor" (wineActor wineCommandExecutioners)
+        let userActorRef = spawn system "userActor" (userActor userCommandExecutioners)
+        let categoryActorRef = spawn system "categoryActor" (categoryActor categoryCommandExecutioners)
+
+        // actor message receivers
+        let userReceivers = getUserReceivers userActorRef
+        let wineReceivers = getWineReceivers wineActorRef
+        let categoryReceivers = getCategoryReceivers categoryActorRef
+        
+        this.AddSingleton(userReceivers)     |> ignore
+        this.AddSingleton(wineReceivers)     |> ignore
+        this.AddSingleton(categoryReceivers) |> ignore
+
 
 // ---------------------------------
 // Web app
@@ -104,10 +124,10 @@ let configureApp (app : IApplicationBuilder) =
           .UseGiraffe(webApp)
 
 let configureServices (services : IServiceCollection) =
-    services.AddCors()                          |> ignore
-    services.AddAuth()                          |> ignore
-    services.AddGiraffe()                       |> ignore
-    services.AddWineryServices()                |> ignore
+    services.AddCors()            |> ignore
+    services.AddAuth()            |> ignore
+    services.AddGiraffe()         |> ignore
+    services.AddWineryServices()  |> ignore
 
 let configureLogging (builder : ILoggingBuilder) =
     let filter (l : LogLevel) = l.Equals LogLevel.Error

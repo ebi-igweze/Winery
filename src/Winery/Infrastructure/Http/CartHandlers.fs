@@ -6,8 +6,7 @@ open System
 open Storage.Models
 open Winery
 open Http.Auth
-
-
+open Services.Models
 
 let getCart userId: HttpHandler =
     fun (next: HttpFunc) (ctx: HttpContext) ->
@@ -30,8 +29,8 @@ let postCartItem userId: HttpHandler =
             let! newItemInfo = ctx.BindJsonAsync<CartItemInfo>()
             let wineQueries = ctx.GetService<WineQueries>()
             let cartQuery = ctx.GetService<CartQuery>()
-            let cartActor = ctx.GetService<CartCommand>()
-            let addCartItem = addItemToCart cartQuery wineQueries.getWineById cartActor
+            let receiver = ctx.GetService<CartCommandReceiver>()
+            let addCartItem = addItemToCart cartQuery wineQueries.getWineById receiver
             return! match (addCartItem <| (UserID userId, WineID newItemInfo.productId, newItemInfo.quantity)) with
                     | Ok _ -> accepted next ctx
                     | Error e -> handleError e next ctx
@@ -41,9 +40,9 @@ let putCartItem userId: HttpHandler =
     fun (next: HttpFunc) (ctx: HttpContext) ->
         task {
             let! updateInfo = ctx.BindJsonAsync<CartItemInfo>()
-            let actor = ctx.GetService<CartCommand>()
+            let receiver = ctx.GetService<CartCommandReceiver>()
             let query = ctx.GetService<CartQuery>()
-            let updateCartItem = updateItemQuantityInCart query actor
+            let updateCartItem = updateItemQuantityInCart query receiver
             return! match (updateCartItem <| (UserID userId, ItemID updateInfo.productId, updateInfo.quantity)) with
                     | Ok _ -> accepted next ctx
                     | Error e -> handleError e next ctx
@@ -53,9 +52,9 @@ let deleteCartItem (userStringId: string, itemStringId: string): HttpHandler =
     fun (next: HttpFunc) (ctx: HttpContext) ->
         task {
             let userId, itemId = Guid userStringId, Guid itemStringId
-            let actor = ctx.GetService<CartCommand>()
+            let receiver = ctx.GetService<CartCommandReceiver>()
             let query = ctx.GetService<CartQuery>()
-            let removeItem = removeItemFromCart query actor 
+            let removeItem = removeItemFromCart query receiver 
             return! match (removeItem <| (UserID userId, ItemID itemId)) with
                     | Ok _ -> accepted next ctx
                     | Error e -> handleError e next ctx

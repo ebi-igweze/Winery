@@ -79,10 +79,9 @@ let addUser getUser addUser: UserOperation<NewUser * Password, unit> =
         | Some _ -> invalidUserOp "A user with this username already exists"
         | None -> 
             let userId = Guid.NewGuid()
-            match addUser (UserID userId, user, password) with
-            | Some _ -> Ok ()
-            | None -> systemError (unableTo "create new user")
-
+            addUser (UserID userId, user, password) |> Ok
+            
+            
 
 ///////////////////////////////////////////////////
 //// Customer Operation  
@@ -98,29 +97,25 @@ let private isExistingCartItem (getCart: UserID -> Cart option): UserOperation<U
             | None -> invalidUserOp "This item does not exist in cart"
             | Some item ->  Ok item
 
-let updateItemQuantityInCart getCart (updateCart: CartAction -> _ option): UserOperation<UserID * ItemID * uint16, unit> =
+let updateItemQuantityInCart getCart updateCart: UserOperation<UserID * ItemID * uint16, unit> =
     fun (userId, itemId, quantity) ->
         let updateQuantity = 
             Ok
             >> Result.bind (isExistingCartItem getCart)
             >> Result.bind (fun _ -> if quantity < 1us then invalidUserOp "Item quantity cannot be less than 1" else Ok () )
-            >> Result.bind (fun _ -> 
-                let update = (userId, itemId, quantity)
-                match update |> (UpdateQuantity >> updateCart) with
-                | None ->  systemError (unableTo "update item quantity") 
-                | Some _ -> Ok ())
+            >> Result.map (fun _ -> (userId, itemId, quantity) |> (UpdateQuantity >> updateCart) )
         updateQuantity (userId, itemId)
         
-let addItemToCart getCart (getWine: WineID -> ExistingWine option) (updateCart: CartAction -> _ option): UserOperation<UserID * WineID * uint16, unit> =
+let addItemToCart getCart getWine updateCart: UserOperation<UserID * WineID * uint16, unit> =
     fun (userId, wineId, quantity) ->
         let (WineID wId) = wineId
         let addItem (wine: ExistingWine) = 
             let itemId = ItemID wine.id
+
             let createAndAddNewItem wine = 
-                let newItem = {id=Guid.NewGuid(); quantity=quantity; product=wine;}
-                match (userId, newItem) |> (AddItem >> updateCart) with
-                | None -> systemError (unableTo "add item")
-                | Some _ -> Ok ()
+                let newItem = { id = Guid.NewGuid(); quantity = quantity; product = wine; }
+                (userId, newItem) |> (AddItem >> updateCart >> Ok)
+                
             match isExistingCartItem getCart (userId, itemId) with
             | Ok item -> updateItemQuantityInCart getCart updateCart (userId, itemId, item.quantity + quantity)
             | Error _ -> 
@@ -132,27 +127,22 @@ let addItemToCart getCart (getWine: WineID -> ExistingWine option) (updateCart: 
         | None -> invalidUserOp (sprintf "A wine with id '%O' does not exist" wId)
         | Some wine -> addItem wine
         
-let removeItemFromCart getCart (removeFromCart: CartAction -> _ option): UserOperation<UserID * ItemID, unit> =
+let removeItemFromCart getCart removeFromCart: UserOperation<UserID * ItemID, unit> =
     fun (userAndItemID) -> 
         let removeItem = 
             Ok
             >> Result.bind (isExistingCartItem getCart)
-            >> Result.bind (fun _ -> 
-                match userAndItemID |> (RemoveItem >> removeFromCart) with
-                | None -> systemError (unableTo "remove cart item")
-                | Some _ -> Ok ())
+            >> Result.map (fun _ -> userAndItemID |> (RemoveItem >> removeFromCart) )
         removeItem userAndItemID
 
 
-let placeOrder (getCart: UserID -> Cart option) (checkout: UserID -> _ option): UserOperation<UserID, unit> =
+let placeOrder getCart checkout: UserOperation<UserID, unit> =
     fun (userId) -> 
         match getCart userId with
         | None ->  invalidUserOp "User has no cart"
         | Some c when Array.isEmpty c.items -> invalidUserOp "User has no cart"
-        | Some _ -> 
-            match checkout userId with
-            | None -> systemError (unableTo "checkout items in cart")
-            | Some _ -> Ok ()
+        | Some _ -> checkout userId |> Ok
+
 
 ///////////////////////////////////////////////////
 //// Administrator Operations  
@@ -169,10 +159,7 @@ let addCategoryWith getCategory addCategory: UserOperation<ExistingUser * NewCat
             Ok
             >> validateAdmin
             >> Result.bind (fun _ -> validateNewCategory getCategory newCategory |> toInvalidOp)
-            >> Result.bind (fun catId -> 
-                match addCategory (catId, newCategory) with
-                | Some _ -> Ok catId
-                | None -> systemError (unableTo "add new category") )
+            >> Result.map (fun catId -> addCategory (catId, newCategory); catId )
         addWith user
 
 let editCategoryWith getCategory updateCategory: UserOperation<ExistingUser * CategoryID * EditCategory, unit> =
@@ -181,10 +168,7 @@ let editCategoryWith getCategory updateCategory: UserOperation<ExistingUser * Ca
             Ok
             >> validateAdmin
             >> Result.bind (fun _ -> validateUpdateCategory getCategory (categoryID, editCategory) |> toInvalidOp)
-            >> Result.bind (fun _ -> 
-                match updateCategory (categoryID, editCategory) with
-                | Some _ -> Ok ()
-                | None -> systemError (unableTo "update category") )
+            >> Result.map (fun _ ->  updateCategory (categoryID, editCategory) )
         editWith user
 
 let removeCategoryWith getCategory deleteCategory: UserOperation<ExistingUser * CategoryID, unit> =
@@ -193,10 +177,7 @@ let removeCategoryWith getCategory deleteCategory: UserOperation<ExistingUser * 
             Ok
             >> validateAdmin
             >> Result.bind (fun _ -> (validateDeleteCategory getCategory categoryID) |>  toInvalidOp)
-            >> Result.bind (fun _ ->
-                match deleteCategory categoryID with
-                | Some _ -> Ok ()
-                | None -> systemError (unableTo "delete category") )
+            >> Result.map (fun _ -> deleteCategory categoryID )
         removeWith user
 
 let addWineWith getCategory getWine addWine: UserOperation<ExistingUser * CategoryID * NewWine, WineID> =
@@ -205,10 +186,7 @@ let addWineWith getCategory getWine addWine: UserOperation<ExistingUser * Catego
             Ok
             >> validateAdmin
             >> Result.bind (fun _ -> validateNewWine getCategory getWine (categoryID, newWine) |> toInvalidOp)
-            >> Result.bind (fun wineId ->  
-                match addWine (categoryID, wineId, newWine) with
-                | Some _ -> Ok wineId 
-                | None -> systemError (unableTo "add new wine") )
+            >> Result.map (fun wineId -> addWine (categoryID, wineId, newWine); wineId )
         addWith user
 
 let removeWineWith getWine deleteWine: UserOperation<ExistingUser * WineID, unit> =
@@ -217,10 +195,7 @@ let removeWineWith getWine deleteWine: UserOperation<ExistingUser * WineID, unit
             Ok
             >> validateAdmin
             >> Result.bind (fun _ -> Winery.Core.validateDeleteWine getWine wineID |> toInvalidOp)
-            >> Result.bind (fun _ -> 
-                match deleteWine wineID with
-                | Some _ -> Ok ()
-                | None -> systemError (unableTo "delete wine") )
+            >> Result.map (fun _ -> deleteWine wineID )
         removeWith user
 
 let editWineWith getCategory getWine updateWine: UserOperation<ExistingUser * WineID * EditWine, unit> =
@@ -228,11 +203,8 @@ let editWineWith getCategory getWine updateWine: UserOperation<ExistingUser * Wi
         let editWith =
             Ok
             >> validateAdmin
-            >> Result.bind (fun _ ->  Winery.Core.validateUpdateWine getWine getCategory (wineID, editWine) |> toInvalidOp)
-            >> Result.bind (fun _ ->
-                match updateWine (wineID, editWine) with 
-                | Some _ -> Ok ()
-                | None -> systemError (unableTo "update wine") )
+            >> Result.bind (fun _ -> Winery.Core.validateUpdateWine getWine getCategory (wineID, editWine) |> toInvalidOp)
+            >> Result.map (fun _ -> updateWine (wineID, editWine) )
         editWith user
 
 let editQuantityWith getWine setQuantity: UserOperation<ExistingUser * WineID * uint16, unit> = 
@@ -241,8 +213,5 @@ let editQuantityWith getWine setQuantity: UserOperation<ExistingUser * WineID * 
             Ok
             >> validateAdmin
             >> Result.bind (fun _ -> updateQuantity getWine (wineID, quantity) |> toInvalidOp)
-            >> Result.bind (fun _ ->
-                match setQuantity (wineID, quantity) with
-                | Some _ -> Ok ()
-                | None -> systemError (unableTo "update wine quantity") )
+            >> Result.map (fun _ -> setQuantity (wineID, quantity) )
         editWith user
