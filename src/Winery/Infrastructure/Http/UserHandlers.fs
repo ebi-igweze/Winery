@@ -25,11 +25,9 @@ let putUserInfo userId: HttpHandler =
                   firstName = getValue editInfo.firstName; 
                   lastName = getValue editInfo.lastName }
             let receivers = ctx.GetService<UserCommandReceivers>()
-            let getUser arg = userQuery.getUser arg |> function | Some (user, _) -> Some user | _ -> None
+            let getUser = userQuery.getUser >> function | Some (user, _) -> Some user | _ -> None
             let updateUser = editUser getUser receivers.updateUser  
-            return! match updateUser (UserID userId, editUserInfo) with
-                    | Ok (CommandID id) -> accepted id next ctx
-                    | Error e -> handleError e next ctx
+            return! (handleCommand next ctx <<  updateUser <| (UserID userId, editUserInfo))
 
         }
 

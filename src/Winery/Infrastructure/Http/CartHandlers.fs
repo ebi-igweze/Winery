@@ -31,9 +31,7 @@ let postCartItem userId: HttpHandler =
             let cartQuery = ctx.GetService<CartQuery>()
             let receiver = ctx.GetService<CartCommandReceiver>()
             let addCartItem = addItemToCart cartQuery wineQueries.getWineById receiver
-            return! match (addCartItem <| (UserID userId, WineID newItemInfo.productId, newItemInfo.quantity)) with
-                    | Ok (CommandID id) -> accepted id next ctx
-                    | Error e -> handleError e next ctx
+            return! (handleCommand next ctx << addCartItem <| (UserID userId, WineID newItemInfo.productId, newItemInfo.quantity))
         }
 
 let putCartItem userId: HttpHandler =
@@ -43,9 +41,7 @@ let putCartItem userId: HttpHandler =
             let receiver = ctx.GetService<CartCommandReceiver>()
             let query = ctx.GetService<CartQuery>()
             let updateCartItem = updateItemQuantityInCart query receiver
-            return! match (updateCartItem <| (UserID userId, ItemID updateInfo.productId, updateInfo.quantity)) with
-                    | Ok (CommandID id) -> accepted id next ctx
-                    | Error e -> handleError e next ctx
+            return! (handleCommand next ctx << updateCartItem <| (UserID userId, ItemID updateInfo.productId, updateInfo.quantity))
         }
 
 let deleteCartItem (userStringId: string, itemStringId: string): HttpHandler = 
@@ -55,9 +51,7 @@ let deleteCartItem (userStringId: string, itemStringId: string): HttpHandler =
             let receiver = ctx.GetService<CartCommandReceiver>()
             let query = ctx.GetService<CartQuery>()
             let removeItem = removeItemFromCart query receiver 
-            return! match (removeItem <| (UserID userId, ItemID itemId)) with
-                    | Ok (CommandID id) -> accepted id next ctx
-                    | Error e -> handleError e next ctx
+            return! (handleCommand next ctx << removeItem <| (UserID userId, ItemID itemId)) 
         }
 
 let cartHttpHandlers: HttpHandler = 

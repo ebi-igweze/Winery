@@ -5,6 +5,7 @@ open Giraffe
 open Winery
 open Microsoft.AspNetCore.Http
 open System
+open Services.Models
 
 type EndPoint = { href : string }
 
@@ -38,8 +39,12 @@ let handleError error: HttpHandler =
     fun (next: HttpFunc) (ctx: HttpContext) ->
         task {
             return! error |> function
-            | NotFound m -> notFoundM m next ctx
-            | InvalidOp m -> badRequestM m next ctx
-            | SystemError m -> serverError m next ctx
+            | NotFound m     -> notFoundM m next ctx
+            | InvalidOp m    -> badRequestM m next ctx
+            | SystemError m  -> serverError m next ctx
             | Unauthorized _ -> unauthorized next ctx
         }
+
+let handleCommand next ctx = function 
+    | Ok (CommandID id) -> accepted id next ctx
+    | Error e -> handleError e next ctx

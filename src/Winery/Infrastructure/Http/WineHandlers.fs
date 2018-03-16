@@ -1,12 +1,12 @@
 module Http.Wines
 
-open Storage.Models
 open Winery
-open Microsoft.AspNetCore.Http
 open Giraffe
 open System
 open Http.Auth
+open Storage.Models
 open Services.Models
+open Microsoft.AspNetCore.Http
 
 type RouteFormat<'a> = Printf.TextWriterFormat<'a> 
 
@@ -28,7 +28,7 @@ let getWine (categoryStringId: string, idString: string) =
             let response = queries.getWineInCategoryById (CategoryID categoryId) (WineID id)
             return! match response with
                     | Some w -> json w next ctx
-                    | None -> notFound next ctx
+                    | None   -> notFound next ctx
         }
 
 let getWineName (categoryStringId:string) =
@@ -40,7 +40,7 @@ let getWineName (categoryStringId:string) =
             let response = queries.getWineInCategoryByName (CategoryID categoryId) (WineName name)
             return! match response with
                     | Some w -> json w next ctx
-                    | None -> notFound next ctx
+                    | None   -> notFound next ctx
         }
 
 let postWine (categoryStringId: string): HttpHandler = 
@@ -55,9 +55,7 @@ let postWine (categoryStringId: string): HttpHandler =
                     | None -> notFound next ctx
                     | Some _ ->
                         let addWine = addWine categoryQueries.getCategoryById wineQueries.getWineByName wineCommandReceivers.addWine
-                        match (addWine <| (fakeAdmin, categoryId, newWine)) with
-                        | Ok (CommandID id) -> accepted id next ctx
-                        | Error e -> handleError e next ctx
+                        (handleCommand next ctx << addWine <| (fakeAdmin, categoryId, newWine))
         }
 
 let deleteWine (categoryStringId: string, idString: string): HttpHandler = 
@@ -71,18 +69,16 @@ let deleteWine (categoryStringId: string, idString: string): HttpHandler =
                     | None -> notFound next ctx
                     | Some _ -> 
                         let removeWine = removeWine wineQueries.getWineById wineCommandReceivers.deleteWine
-                        match (removeWine <| (fakeAdmin, WineID wineId)) with
-                        | Ok (CommandID id) -> accepted id next ctx
-                        | Error e -> handleError e next ctx 
+                        (handleCommand next ctx << removeWine <| (fakeAdmin, WineID wineId))
         }
 
 type EditInfo = 
-    { name: string
-      description: string
-      year: string
-      price: string
-      imagePath: string
-      categoryID: string }
+    { name        : string
+      year        : string
+      price       : string
+      imagePath   : string
+      description : string
+      categoryID  : string }
 
 let putWine (categoryStringId: string, idString: string): HttpHandler =
     fun (next: HttpFunc) (ctx: HttpContext) ->
@@ -105,9 +101,7 @@ let putWine (categoryStringId: string, idString: string): HttpHandler =
                               categoryID=hasValue editInfo.categoryID Guid; year=hasValue editInfo.year Int32.Parse }
 
                         let updateWine = (editWine categoryQueries.getCategoryById getWineByIdOrName wineCommandReceivers.updateWine)
-                        match (updateWine <| (fakeAdmin, WineID wineId, editWineInfo)) with
-                        | Ok (CommandID id) -> accepted id next ctx
-                        | Error e -> handleError e next ctx  
+                        (handleCommand next ctx << updateWine <| (fakeAdmin, WineID wineId, editWineInfo))
         }
 
 let wineHttpHandlers: HttpHandler = 
