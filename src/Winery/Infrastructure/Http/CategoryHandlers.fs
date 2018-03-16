@@ -28,29 +28,29 @@ let deleteCategory id =
     fun (next: HttpFunc) (ctx: HttpContext) ->
         task {
             let queries = ctx.GetService<CategoryQueries>()
-            let commands = ctx.GetService<CategoryCommandReceivers>()
-            let removeCategory = removeCategoryWith queries.getCategoryById commands.deleteCategory 
+            let commandReceivers = ctx.GetService<CategoryCommandReceivers>()
+            let removeCategory = removeCategory queries.getCategoryById commandReceivers.deleteCategory 
             return! match (removeCategory <| (fakeAdmin, CategoryID id)) with
-                    | Ok _ -> noContent next ctx
+                    | Ok (CommandID id) -> accepted id next ctx
                     | Error e -> handleError e next ctx
         }
 
-type EditInfo = {name: string; description: string}
+type EditInfo = { name : string; description : string }
 
 let putCategory categoryId = 
     fun (next: HttpFunc) (ctx: HttpContext) ->
         task {
             let! editInfo = ctx.BindJsonAsync<EditInfo>()
             let queries = ctx.GetService<CategoryQueries>()
-            let commands = ctx.GetService<CategoryCommandReceivers>()
-            let editCategory = {EditCategory.name=hasValue editInfo.name id; description=hasValue editInfo.description id}
+            let commandReceivers = ctx.GetService<CategoryCommandReceivers>()
+            let editCategoryInfo = {EditCategory.name=hasValue editInfo.name id; description=hasValue editInfo.description id}
             let getCategoryByIdOrName = function
                 | ID categoryId -> queries.getCategoryById categoryId
                 | Name categoryName -> queries.getCategoryByName categoryName
 
-            let updateCategory = editCategoryWith getCategoryByIdOrName commands.updateCategory
-            return! match (updateCategory <| (fakeAdmin, CategoryID categoryId, editCategory)) with
-                    | Ok _ -> noContent next ctx
+            let updateCategory = editCategory getCategoryByIdOrName commandReceivers.updateCategory
+            return! match (updateCategory <| (fakeAdmin, CategoryID categoryId, editCategoryInfo)) with
+                    | Ok (CommandID id) -> accepted id next ctx
                     | Error e -> handleError e next ctx
         }
 
@@ -59,9 +59,9 @@ let postCategory: HttpHandler =
         task {
             let! newCategory = ctx.BindJsonAsync<NewCategory>()
             let queries = ctx.GetService<CategoryQueries>()
-            let commands = ctx.GetService<CategoryCommandReceivers>()
-            return! match (addCategoryWith queries.getCategoryByName commands.addCategory <| (fakeAdmin, newCategory)) with
-                    | Ok (CategoryID id) -> createdM (id.ToString("N")) next ctx
+            let commandReceivers = ctx.GetService<CategoryCommandReceivers>()
+            return! match (addCategory queries.getCategoryByName commandReceivers.addCategory <| (fakeAdmin, newCategory)) with
+                    | Ok (CommandID id) -> accepted id next ctx
                     | Error e -> handleError e next ctx
         }
 

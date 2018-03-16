@@ -1,6 +1,41 @@
 module Services.Models
 
 open Winery
+open System
+open System.Threading.Tasks
+
+
+type ResultStatus = 
+    | NotCompleted
+    | Success 
+    | Failure with
+    override this.ToString () = this |> function | Success -> "SUCCESS" | Failure -> "FAILURE" | NotCompleted -> "NOTCOMPLETED"
+
+type CommandID = CommandID of Guid
+type CommandMessage = Message of string
+
+type Command = 
+    { id: CommandID;
+      time: DateTime;
+      mutable resultMessage: string;
+      mutable resultStatus: ResultStatus; }
+
+type Envelope<'T> = 
+    { id: Guid;
+      message: 'T;
+      time: DateTime; }
+
+type CommandResult = 
+    { id: Guid
+      message: string
+      result: ResultStatus }   
+
+type CommandAction = 
+    | CommandReceived of Command
+    | CommandCompleted of CommandID * CommandMessage * ResultStatus
+    | CommandStatusRequest of CommandID
+    
+type CommandAgent = { checkStatus : CommandID -> Task<CommandResult option> }
 
 type AuthService =
     { hashPassword: string -> string 
@@ -17,16 +52,31 @@ type WineCommand =
     | DeleteWine of wineId : WineID
 
 type CategoryCommandReceivers = 
-    { addCategory      : CategoryID * NewCategory -> unit 
-      updateCategory   : CategoryID * EditCategory -> unit
-      deleteCategory   : CategoryID -> unit }
+    { addCategory      : CategoryID * NewCategory -> CommandID 
+      updateCategory   : CategoryID * EditCategory -> CommandID
+      deleteCategory   : CategoryID -> CommandID }
 
 type WineCommandReceivers = 
-    { addWine      : CategoryID * WineID * NewWine -> unit
-      updateWine   : WineID * EditWine -> unit 
-      deleteWine   : WineID -> unit }
+    { addWine      : CategoryID * WineID * NewWine -> CommandID
+      updateWine   : WineID * EditWine -> CommandID 
+      deleteWine   : WineID -> CommandID }
 
 type UserCommandReceivers = 
-    { addUser: UserID * NewUser * Password -> unit }
+    { addUser    : UserID * NewUser * Password -> CommandID
+      updateUser : UserID * EditUser -> CommandID }
 
-type CartCommandReceiver = CartAction -> unit
+type CartCommandReceiver = CartAction -> CommandID
+
+
+let envelopeWithDefaults message = 
+    { id = Guid.NewGuid();
+      message = message; 
+      time = DateTime.UtcNow; } 
+
+let commandDefaultFromEnvelope (envelope: Envelope<_>) =
+    { id = CommandID envelope.id;
+      time = envelope.time
+      resultMessage = "";
+      resultStatus = NotCompleted }
+
+let commandEnvelopeReveived m = CommandReceived << commandDefaultFromEnvelope <| m

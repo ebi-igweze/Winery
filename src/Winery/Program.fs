@@ -21,6 +21,7 @@ open Microsoft.AspNetCore.Authentication.JwtBearer
 open Services.Actors.Storage
 open Akka.FSharp.Spawn
 open Services.Actors.User
+open Http.Users
 
 // ---------------------------------
 // Configure authentication
@@ -57,12 +58,12 @@ type IServiceCollection with
         this.AddSingleton(authService)                          |> ignore
 
     member this.AddWineryServices() =
+        this.AddMessageReceivers()            |> ignore
         this.AddSingleton(userQuery)          |> ignore
         this.AddSingleton(cartQuery)          |> ignore
         this.AddSingleton(wineQueries)        |> ignore
-        this.AddSingleton(categoryQueries)    |> ignore
         this.AddSingleton(cartCommand)        |> ignore
-        this.AddMessageReceivers()            |> ignore
+        this.AddSingleton(categoryQueries)    |> ignore
         
     member private this.AddMessageReceivers() =
         // create actor system
@@ -72,12 +73,15 @@ type IServiceCollection with
         let wineActorRef = spawn system "wineActor" (wineActor wineCommandExecutioners)
         let userActorRef = spawn system "userActor" (userActor userCommandExecutioners)
         let categoryActorRef = spawn system "categoryActor" (categoryActor categoryCommandExecutioners)
+        let commandActorRef = spawn system "commandActor" commandActor
 
         // actor message receivers
         let userReceivers = getUserReceivers userActorRef
         let wineReceivers = getWineReceivers wineActorRef
         let categoryReceivers = getCategoryReceivers categoryActorRef
+        let commandAgent = getCommandAgent commandActorRef
         
+        this.AddSingleton(commandAgent)      |> ignore
         this.AddSingleton(userReceivers)     |> ignore
         this.AddSingleton(wineReceivers)     |> ignore
         this.AddSingleton(categoryReceivers) |> ignore
@@ -95,6 +99,7 @@ let webApp =
                 wineHttpHandlers
                 cartHttpHandlers
                 authHttpHandlers
+                userHttpHandlers
             ])
         setStatusCode 404 >=> text "Not Found" ]
 

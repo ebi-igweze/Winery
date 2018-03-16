@@ -51,8 +51,20 @@ type Inventory =
       quantity: uint16
       product: ExistingWine }
 
-type Operation<'T,'U> = 'T -> Result<'U,string>
 type IDorName<'T, 'U> = ID of 'T | Name of 'U
+
+type OperationError = 
+| NotFound of string
+| InvalidOp of string
+| Unauthorized of string
+| SystemError of string
+
+type Operation<'T,'U> = 'T -> Result<'U, OperationError>
+
+let notFoundOp s = s |> (NotFound >> Error)
+let systemError s = s |> (SystemError >> Error)
+let invalidUserOp s = s |> (InvalidOp >> Error)
+let unauthorizedUserOp s = s |> (Unauthorized >> Error)
 
 let unableTo performAction = sprintf "Unable to %s at the moment, please try again later." performAction
  
@@ -64,7 +76,7 @@ let errorIf condition errorMsg =
     fun result -> 
         result |> Result.bind (fun arg ->
             if condition arg 
-            then Error errorMsg
+            then Error (InvalidOp errorMsg)
             else Ok arg )
 
 let private validName =
@@ -110,13 +122,13 @@ let private isValidCategoryInfo : Operation<NewCategory, NewCategory> =
 let private isNotExistingCategory (getCategory: CategoryName -> ExistingCategory option) : Operation<NewCategory, NewCategory> =
     fun (category : NewCategory) -> 
         match (getCategory << CategoryName) category.name with
-        | Some _ -> Error (sprintf "A category with name '%s' already exists" category.name)
+        | Some _ -> invalidUserOp (sprintf "A category with name '%s' already exists" category.name)
         | None   -> Ok category
 
 let private isExistingCategoryWithId (getCategory: CategoryID -> ExistingCategory option): Operation<CategoryID, ExistingCategory> =
     fun (categoryId: CategoryID) -> 
         match getCategory categoryId with
-        | None -> Error (sprintf "Category with id '%O' does not exist" categoryId)
+        | None -> notFoundOp (sprintf "Category with id '%O' does not exist" categoryId)
         | Some category -> Ok category 
 
 let validateNewCategory getCategory: Operation<NewCategory, CategoryID> = 
@@ -142,7 +154,7 @@ let validateUpdateCategory (getCategory: IDorName<CategoryID, CategoryName> -> E
             | {name=(Some n); description=(Some d)} -> validND (n,d) |> Result.map (fun _ -> editCategory)            
             | {name=(Some n)} -> validName n |> Result.map (fun _ -> editCategory)
             | {description=(Some d)} -> validDescription d |> Result.map (fun _ -> editCategory)
-            | _ -> Error "Nothing to update"
+            | _ -> invalidUserOp "Nothing to update"
 
     let notExistingCategoryName: Operation<CategoryID * EditCategory, EditCategory> =
         fun (CategoryID id, editCategory: EditCategory) ->
@@ -150,7 +162,7 @@ let validateUpdateCategory (getCategory: IDorName<CategoryID, CategoryName> -> E
             | {name=None} -> Ok editCategory
             | {name=Some editName} -> 
                 match (getCategory << Name << CategoryName) editName with
-                | Some c when c.id <> id -> Error (sprintf "A category with this name '%s' already exists" editName)
+                | Some c when c.id <> id -> Error (InvalidOp (sprintf "A category with this name '%s' already exists" editName))
                 | _ -> Ok editCategory
 
     fun (categoryId, editCategory) -> 
@@ -173,13 +185,13 @@ let private isNotExistingWine (getCategory: WineName -> ExistingWine option): Op
     fun (newWine: NewWine) -> 
         match (getCategory << WineName) newWine.name with
         | None -> Ok newWine
-        | Some _ -> Error (sprintf "A wine with the name '%s' already Exists" newWine.name)
+        | Some _ -> invalidUserOp (sprintf "A wine with the name '%s' already Exists" newWine.name)
 
 let private isExistingWineWithId (getWine: WineID -> ExistingWine option): Operation<WineID, ExistingWine> =
     fun (wineId) ->
         match getWine wineId with
         | Some wine -> Ok wine
-        | None -> Error (sprintf "A wine with this %O does not exist" wineId)
+        | None -> notFoundOp (sprintf "A wine with this %O does not exist" wineId)
 
 let validateNewWine getCategory getWine: Operation<CategoryID * NewWine, WineID> =
     fun (categoryID, newWine) ->
@@ -250,7 +262,7 @@ let validateUpdateWine (getWine: IDorName<WineID, WineName> -> ExistingWine opti
 
         fun (editWine: EditWine) ->
             match editWine with
-            | {name=None; description=None; year=None; categoryID=None} -> Error "Nothing to update"
+            | {name=None; description=None; year=None; categoryID=None} -> invalidUserOp "Nothing to update"
             | _ -> 
                 editWine 
                 |> checkName 
@@ -266,7 +278,7 @@ let validateUpdateWine (getWine: IDorName<WineID, WineName> -> ExistingWine opti
             | {name=None} -> Ok editWine
             | {name=Some editName} -> 
                 match (getWine << Name << WineName) editName with
-                | Some v when v.id <> id -> Error (sprintf "A category with this name '%s' already exists" editName)
+                | Some v when v.id <> id -> invalidUserOp (sprintf "A Wine with this name '%s' already exists" editName)
                 | _ -> Ok editWine
 
     fun (id, editWine) ->

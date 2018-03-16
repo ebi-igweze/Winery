@@ -99,7 +99,8 @@ let login: HttpHandler =
             let! model = ctx.BindJsonAsync<LoginModel>()
             let userQuery = ctx.GetService<UserQueries>()
             let authService = ctx.GetService<AuthService>()
-            return! match userQuery.getUser (UserName model.userName) with 
+            let getUser = userQuery.getUser << Name << UserName
+            return! match getUser model.userName with 
                     | None -> unauthorizedM "UserName doesn't exist" next ctx
                     | Some (user, Password actualPassword) -> 
                         if (not (authService.verify (model.password, actualPassword))) 
@@ -122,7 +123,8 @@ let signUp: HttpHandler =
             let authService = ctx.GetService<AuthService>()
             let receivers = ctx.GetService<UserCommandReceivers>()
             let hashedPassword = authService.hashPassword(model.password)
-            return! match addUser userQuery.getUser receivers.addUser (user, Password hashedPassword) with
+            let getUser = userQuery.getUser << Name
+            return! match addUser getUser receivers.addUser (user, Password hashedPassword) with
                     | Error e -> handleError e next ctx
                     | Ok _ ->  NewUser user |> toUserInfo |> generateToken |> json <|| (next, ctx) 
         }

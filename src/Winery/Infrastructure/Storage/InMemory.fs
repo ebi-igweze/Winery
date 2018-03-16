@@ -150,14 +150,16 @@ let private addCategory =
         (id, category)
         |> newCategoryToCategory 
         |> storage.categories.Add
-        |> Some
+        |> fun () -> Ok "Category added successfully."
 
 let private removeCategory =
     fun (categoryId) ->
         categoryId
         |> queryCategoryById
         |> Option.map storage.categories.Remove
-        |> Option.map ignore
+        |> function
+            | Some _ -> Ok "Category was removed sucessfully."
+            | None   -> Error "Unable to remove Category, please try again."
 
 let private updateCategory =
     let update (editCategory: EditCategory) (category: Category) =
@@ -169,12 +171,18 @@ let private updateCategory =
         categoryId
         |> queryCategoryById
         |> Option.map (update editCategory)
+        |> function
+            | Some _ -> Ok "Category was updated sucessfully."
+            | None   -> Error "Unable to update Category, please try again."
 
 let private addWine = 
     let add = fun (wine:Wine) -> 
         wine.categoryId
         |> (queryCategoryById << CategoryID) 
         |> Option.map (fun category -> category.wines.Add wine)
+        |> function
+            | Some _ -> Ok "Wine was added sucessfully."
+            | None   -> Error "Unable to add Wine, please try again."
 
     fun (CategoryID catId, WineID id, wine) ->
         (catId, id, wine)
@@ -186,12 +194,14 @@ let private removeWine =
         wine.categoryId
         |> (queryCategoryById << CategoryID)
         |> Option.map (fun category -> category.wines.Remove wine)
-        |> Option.map ignore
 
     fun (wineId) ->
         wineId
         |> queryWineById
         |> Option.bind remove
+        |> function
+            | Some _ -> Ok "Wine was removed sucessfully."
+            | None   -> Error "Unable to remove Wine, please try again."
 
 let private updateWine =
     let update = fun (editWine: EditWine) (wine: Wine) ->
@@ -206,6 +216,9 @@ let private updateWine =
         wineId
         |> queryWineById
         |> Option.map (update editWine)
+        |> function
+            | Some _ -> Ok "Wine was updated sucessfully."
+            | None   -> Error "Unable to update Wine, please try again."
 
 let private addCartItem =
     fun (UserID userId, cartItem) ->
@@ -214,7 +227,7 @@ let private addCartItem =
         |> (function 
              | Some cart -> (cart.items.Add << toCartItem) cartItem
              | None ->  cartItem |> toCartItem |> fun item -> {userId=userId; items=List<CartItem>([item]) } |>  storage.carts.Add)
-        |> Some
+        |> fun () -> Ok "Item added to cart successfully."
 
 let private removeCartItem = 
     fun (UserID userId, ItemID cartItemId) ->
@@ -223,8 +236,10 @@ let private removeCartItem =
         |> Option.bind (fun cart ->
             cart.items
             |> Seq.tryFind (fun item -> item.id = cartItemId)
-            |> Option.map cart.items.Remove 
-            |> Option.map ignore )
+            |> Option.map cart.items.Remove )
+        |> function
+            | Some _ -> Ok "Item was removed sucessfully."
+            | None   -> Error "Unable to remove item, please try again." 
 
 let private updateQuantity = 
     fun (UserID userId, ItemID cartItemId, quantity) ->
@@ -233,12 +248,18 @@ let private updateQuantity =
         |> Option.bind (fun cart ->
             cart.items
             |> Seq.tryFind (fun item -> item.id = cartItemId)
-            |> Option.map (fun  item -> item.quantity <- quantity) )
+            |> Option.map (fun  item -> item.quantity <- quantity) )        
+        |> function
+            | Some _ -> Ok "Item quantity was updated sucessfully."
+            | None   -> Error "Unable to update item, please try again."
 
 let private addUser = 
     fun (UserID id, newUser, Password password) ->
-        (id,newUser,password) |> newUserToUser |> storage.users.Add |> Some
-
+        (id,newUser,password) 
+        |> newUserToUser 
+        |> storage.users.Add 
+        |> fun () -> Ok "User account was created sucessfully."
+            
 let private updateUser =
     let update (editUser: EditUser) (user: User) = 
         if (editUser.email.IsSome) then user.email <- editUser.email.Value
@@ -246,8 +267,12 @@ let private updateUser =
         if (editUser.lastName.IsSome) then user.lastName <- editUser.lastName.Value
 
     fun (userId, editUser) ->
-        userId |> queryUserById |> Option.map (update editUser)
-        
+        userId 
+        |> queryUserById
+        |> Option.map (update editUser)        
+        |> function
+            | Some _ -> Ok "User information update was sucessfully."
+            | None   -> Error "Unable to update User information, please try again."
 
 /////////////////////////
 ////  Query Stubs
@@ -281,6 +306,8 @@ let private getUserCart = fun (UserID userId) -> userId |> queryUserCart |> Opti
 
 let private getUserByName = fun (userName) -> userName |> queryUserByName |> Option.map (fun user -> (userToExistingUser user, Password user.password))
 
+let private getUserById = fun (userId) -> userId |> queryUserById |> Option.map (fun user -> userToExistingUser user, Password user.password)
+
 /////////////////////////
 ////  In Memory Models
 /////////////////////////
@@ -313,5 +340,5 @@ let cartCommand: CartCommandExecutioner = function
     | RemoveItem (userId, itemId) -> removeCartItem (userId, itemId)
     | UpdateQuantity (userId, itemId, quantity) -> updateQuantity (userId, itemId, quantity)
 
-let userQuery: UserQueries = { getUser = getUserByName }
-let userCommandExecutioners: UserCommandExecutioners = { addUser = addUser }
+let userQuery: UserQueries = { getUser = function | Name n -> getUserByName n | ID i -> getUserById i }
+let userCommandExecutioners: UserCommandExecutioners = { addUser = addUser; updateUser = updateUser }

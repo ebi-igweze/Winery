@@ -32,7 +32,7 @@ let postCartItem userId: HttpHandler =
             let receiver = ctx.GetService<CartCommandReceiver>()
             let addCartItem = addItemToCart cartQuery wineQueries.getWineById receiver
             return! match (addCartItem <| (UserID userId, WineID newItemInfo.productId, newItemInfo.quantity)) with
-                    | Ok _ -> accepted next ctx
+                    | Ok (CommandID id) -> accepted id next ctx
                     | Error e -> handleError e next ctx
         }
 
@@ -44,7 +44,7 @@ let putCartItem userId: HttpHandler =
             let query = ctx.GetService<CartQuery>()
             let updateCartItem = updateItemQuantityInCart query receiver
             return! match (updateCartItem <| (UserID userId, ItemID updateInfo.productId, updateInfo.quantity)) with
-                    | Ok _ -> accepted next ctx
+                    | Ok (CommandID id) -> accepted id next ctx
                     | Error e -> handleError e next ctx
         }
 
@@ -56,7 +56,7 @@ let deleteCartItem (userStringId: string, itemStringId: string): HttpHandler =
             let query = ctx.GetService<CartQuery>()
             let removeItem = removeItemFromCart query receiver 
             return! match (removeItem <| (UserID userId, ItemID itemId)) with
-                    | Ok _ -> accepted next ctx
+                    | Ok (CommandID id) -> accepted id next ctx
                     | Error e -> handleError e next ctx
         }
 

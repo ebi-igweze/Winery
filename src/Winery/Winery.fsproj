@@ -28,12 +28,13 @@
     <Compile Include="Domain/Winery.fs" />
     <Compile Include="Domain/User.fs" />
     <Compile Include="Infrastructure/Storage/Models.fs" />
-    <Compile Include="Infrastructure/Storage/InMemory/InMemory.fs" />
+    <Compile Include="Infrastructure/Storage/InMemory.fs" />
     <Compile Include="Infrastructure/Services/Models.fs" />
-    <Compile Include="Infrastructure/Services/StorageActors.fs" />
     <Compile Include="Infrastructure/Services/UserActors.fs" />
+    <Compile Include="Infrastructure/Services/StorageActors.fs" />
     <Compile Include="Infrastructure/Http/Helpers.fs" />
     <Compile Include="Infrastructure/Http/Auth.fs" />
+    <Compile Include="Infrastructure/Http/UserHandlers.fs" />
     <Compile Include="Infrastructure/Http/CategoryHandlers.fs" />
     <Compile Include="Infrastructure/Http/WineHandlers.fs" />
     <Compile Include="Infrastructure/Http/CartHandlers.fs" />
