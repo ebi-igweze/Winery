@@ -58,29 +58,31 @@ type IServiceCollection with
         this.AddSingleton(authService)                          |> ignore
 
     member this.AddWineryServices() =
-        this.AddMessageReceivers()            |> ignore
-        this.AddSingleton(userQuery)          |> ignore
-        this.AddSingleton(cartQuery)          |> ignore
-        this.AddSingleton(wineQueries)        |> ignore
-        this.AddSingleton(cartCommand)        |> ignore
-        this.AddSingleton(categoryQueries)    |> ignore
+        this.AddMessageReceivers()          |> ignore
+        this.AddSingleton(userQuery)        |> ignore
+        this.AddSingleton(cartQuery)        |> ignore
+        this.AddSingleton(wineQueries)      |> ignore
+        this.AddSingleton(categoryQueries)  |> ignore
         
     member private this.AddMessageReceivers() =
         // create actor system
         let system = Akka.FSharp.System.create "winery-system" (Akka.FSharp.Configuration.defaultConfig())
         
         // create actor refs
-        let wineActorRef = spawn system "wineActor" (wineActor wineCommandExecutioners)
-        let userActorRef = spawn system "userActor" (userActor userCommandExecutioners)
-        let categoryActorRef = spawn system "categoryActor" (categoryActor categoryCommandExecutioners)
-        let commandActorRef = spawn system "commandActor" commandActor
+        let wineActorRef        = spawn system "wineActor" (wineActor wineCommandExecutioners)
+        let userActorRef        = spawn system "userActor" (userActor userCommandExecutioners)
+        let cartActorRef        = spawn system "cartActor" (cartActor cartCommandExecutioner)
+        let commandActorRef     = spawn system "commandActor" commandActor
+        let categoryActorRef    = spawn system "categoryActor" (categoryActor categoryCommandExecutioners)
 
         // actor message receivers
-        let userReceivers = getUserReceivers userActorRef
-        let wineReceivers = getWineReceivers wineActorRef
-        let categoryReceivers = getCategoryReceivers categoryActorRef
-        let commandAgent = getCommandAgent commandActorRef
+        let cartReceiver       =  getCartReceiver cartActorRef
+        let commandAgent       =  getCommandAgent commandActorRef
+        let userReceivers      =  getUserReceivers userActorRef
+        let wineReceivers      =  getWineReceivers wineActorRef
+        let categoryReceivers  =  getCategoryReceivers categoryActorRef
         
+        this.AddSingleton(cartReceiver)      |> ignore
         this.AddSingleton(commandAgent)      |> ignore
         this.AddSingleton(userReceivers)     |> ignore
         this.AddSingleton(wineReceivers)     |> ignore

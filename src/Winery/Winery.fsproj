@@ -38,8 +38,6 @@
     <Compile Include="Infrastructure/Http/CategoryHandlers.fs" />
     <Compile Include="Infrastructure/Http/WineHandlers.fs" />
     <Compile Include="Infrastructure/Http/CartHandlers.fs" />
-    <Compile Include="Models.fs" />
-    <Compile Include="HttpHandlers.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
 

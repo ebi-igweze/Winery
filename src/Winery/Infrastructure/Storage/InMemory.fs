@@ -61,13 +61,12 @@ do wines.Add(wine1)
 do wines.Add(wine2)
 
 // create and add list of categories
-let category = { Category.id=catID; name="Sparkling"; description="A very fizzy type of wine; with Champagne as a typical example."; wines=wines }
+let category = { Category.id=catID; name="Sparkling"; description="A very fizzy type of wine with Champagne as a typical example."; wines=wines }
 let categories = List<Category>()
 do categories.Add(category)
 
 // create list of carts
 let carts = List<Cart>()
-
 
 // create list of users
 let admin = {id=catID; email="Admin"; firstName="Admin"; lastName="Admin"; role="admin"; password=BCrypt.Net.BCrypt.HashPassword("Admin")}
@@ -285,8 +284,7 @@ let private getCategoryById = fun (categoryId) ->
 let private getCategoryByName = fun (categoryName) ->
     categoryName |> (queryCategoryByName >> Option.map categoryToExistingCategory)
 
-let private getCategoryByIDorName = fun (idOrName) ->
-    idOrName |> function
+let private getCategoryByIDorName = function
     | ID categoryId -> getCategoryById categoryId  
     | Name categoryName -> getCategoryByName categoryName
 
@@ -329,13 +327,13 @@ let wineQueries: WineQueries =
       getWineInCategoryByName = getWineInCategoryByName
       getWineInCategoryById = getWineInCategoryById }
 
-let wineCommandExecutioners: WineCommandExecutioners =
+let wineCommandExecutioners: WineCommandExecutioners = 
     { addWine = addWine
       updateWine = updateWine
       deleteWine = removeWine }
 
 let cartQuery: CartQuery = getUserCart
-let cartCommand: CartCommandExecutioner = function 
+let cartCommandExecutioner: CartCommandExecutioner = function 
     | AddItem (userId, cartItem) -> addCartItem (userId, cartItem)
     | RemoveItem (userId, itemId) -> removeCartItem (userId, itemId)
     | UpdateQuantity (userId, itemId, quantity) -> updateQuantity (userId, itemId, quantity)
