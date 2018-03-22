@@ -1,17 +1,20 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
-    <TargetFramework>netcoreapp2.0</TargetFramework>
+    <TargetFramework>net461</TargetFramework>
     <DebugType>portable</DebugType>
     <AssemblyName>Winery</AssemblyName>
     <OutputType>Exe</OutputType>
-    <RuntimeFrameworkVersion>2.0.0</RuntimeFrameworkVersion>
+    <RuntimeFrameworkVersion>4.6.1</RuntimeFrameworkVersion>
     <EnableDefaultContentItems>false</EnableDefaultContentItems>
+    <FscToolPath>C:\Program Files (x86)\Microsoft SDKs\F#\4.1\Framework\v4.0</FscToolPath>
+    <FscToolExe>fsc.exe</FscToolExe>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Akka.Fsharp" Version="1.2.3" />
     <PackageReference Include="BCrypt.Net-Core" Version="1.4.0" />
+    <PackageReference Include="FSharp.Data" Version="2.4.5" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="2.0.1" />
     <PackageReference Include="Microsoft.AspNetCore.Cors" Version="2.0.*" />
     <PackageReference Include="Microsoft.AspNetCore.Hosting" Version="2.0.*" />
@@ -29,6 +32,7 @@
     <Compile Include="Domain/User.fs" />
     <Compile Include="Infrastructure/Storage/Models.fs" />
     <Compile Include="Infrastructure/Storage/InMemory.fs" />
+    <Compile Include="Infrastructure/Storage/FileStore/FileStore.fs" />
     <Compile Include="Infrastructure/Services/Models.fs" />
     <Compile Include="Infrastructure/Services/UserActors.fs" />
     <Compile Include="Infrastructure/Services/StorageActors.fs" />
@@ -44,5 +48,4 @@
   <ItemGroup>
     <None Include="web.config" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
-
 </Project>

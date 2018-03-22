@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>netcoreapp2.0</TargetFramework>
+    <TargetFramework>net461</TargetFramework>
     <IsPackable>false</IsPackable>
   </PropertyGroup>
 
@@ -27,7 +27,7 @@
     <Compile Include="ValidateInput.fs" />
     <Compile Include="ValidateCommand.fs" />
     <Compile Include="Tests.fs" />
-    <Compile Include="Program.fs" />
+    <!-- <Compile Include="Program.fs" /> -->
   </ItemGroup>
 
   <!--

@@ -137,7 +137,7 @@ let removeItemFromCart getCart removeFromCart: Operation<UserID * ItemID, _> =
         removeItem userAndItemID
 
 
-let placeOrder getCart checkout: Operation<UserID, unit> =
+let placeOrder (getCart: _ -> Cart option) checkout: Operation<UserID, unit> =
     fun (userId) -> 
         match getCart userId with
         | None ->  invalidUserOp "User has no cart"

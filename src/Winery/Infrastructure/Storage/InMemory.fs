@@ -90,55 +90,44 @@ let private queryCategoryByName = fun (CategoryName catName) ->
     |> Seq.where (fun c -> c.name = catName)
     |> Seq.tryHead
 
-let private queryWineByName =
-    fun (WineName name) ->
-        storage.categories
-        |> Seq.map (fun c -> c.wines)
-        |> Seq.collect id
-        |> Seq.tryFind (fun w -> w.name = name)
+let private queryWineByName = fun (WineName name) ->
+    storage.categories
+    |> Seq.map (fun c -> c.wines)
+    |> Seq.collect id
+    |> Seq.tryFind (fun w -> w.name = name)
         
-let private queryWines = 
-    fun () ->
-        storage.categories
-        |> Seq.map(fun c -> c.wines)
-        |> Seq.collect id
+let private queryWines = fun () ->
+    storage.categories
+    |> Seq.map(fun c -> c.wines)
+    |> Seq.collect id
 
-let private queryWineById =
-    fun (WineID wineId) -> 
-        queryWines () |> Seq.tryFind (fun w -> w.id = wineId)
+let private queryWineById = fun (WineID wineId) -> 
+    queryWines () |> Seq.tryFind (fun w -> w.id = wineId)
         
-let private queryWinesInCategory =
-    fun (catId) ->
-        catId
-        |> queryCategoryById 
-        |> Option.map (fun categories -> categories.wines )
+let private queryWinesInCategory = fun (catId) ->
+    catId
+    |> queryCategoryById 
+    |> Option.map (fun categories -> categories.wines )
 
 let private queryWineInCategoryByCriteria categoryId criteria = 
         categoryId
         |> queryWinesInCategory 
-        |> function 
-            | None -> None
-            | Some wines ->  wines |> Seq.tryFind criteria
+        |> Option.bind (Seq.tryFind criteria)
 
-let private queryWineInCategoryById = 
-    fun (catId) (WineID wineId) -> 
-        queryWineInCategoryByCriteria catId (fun w -> w.id = wineId)
+let private queryWineInCategoryById = fun (catId) (WineID wineId) -> 
+    queryWineInCategoryByCriteria catId (fun w -> w.id = wineId)
 
-let private queryWineInCategoryByName = 
-    fun (catId) (WineName wineName) ->
-        queryWineInCategoryByCriteria catId (fun w -> w.name = wineName)
+let private queryWineInCategoryByName = fun (catId) (WineName wineName) ->
+    queryWineInCategoryByCriteria catId (fun w -> w.name = wineName)
 
-let private queryUserCart =
-    fun (userId) ->
-        storage.carts |> Seq.tryFind (fun c -> c.userId = userId)
+let private queryUserCart = fun (userId) ->
+    storage.carts |> Seq.tryFind (fun c -> c.userId = userId)
 
-let private queryUserByName = 
-    fun (UserName name) ->
-        storage.users |> Seq.tryFind (fun u -> u.email = name)
+let private queryUserByName = fun (UserName name) ->
+    storage.users |> Seq.tryFind (fun u -> u.email = name)
 
-let private queryUserById = 
-    fun (UserID id) ->
-        storage.users |> Seq.tryFind (fun u -> u.id = id)
+let private queryUserById = fun (UserID id) ->
+    storage.users |> Seq.tryFind (fun u -> u.id = id)
 
 
 /////////////////////////

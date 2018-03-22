@@ -3,13 +3,13 @@ module Winery.App
 open System
 open Giraffe
 open Http.Auth
+open Storage
 open Http.Cart
 open Http.Wines
 open BCrypt.Net
 open System.Text
 open Http.Categories
 open Services.Models
-open Storage.InMemory
 open Microsoft.Extensions.Logging
 open Microsoft.AspNetCore.Builder
 open Microsoft.AspNetCore.Hosting
@@ -58,6 +58,15 @@ type IServiceCollection with
         this.AddSingleton(authService)                          |> ignore
 
     member this.AddWineryServices() =
+        // check with configurations later
+        let isProduction = true
+        
+        // get service depending on app environment
+        let userQuery       = isProduction |> function | true -> FileStore.userQuery | false -> InMemory.userQuery
+        let cartQuery       = isProduction |> function | true -> FileStore.cartQuery | false -> InMemory.cartQuery
+        let wineQueries     = isProduction |> function | true -> FileStore.wineQueries | false -> InMemory.wineQueries
+        let categoryQueries = isProduction |> function | true -> FileStore.categoryQueries | false -> InMemory.categoryQueries
+        
         this.AddMessageReceivers()          |> ignore
         this.AddSingleton(userQuery)        |> ignore
         this.AddSingleton(cartQuery)        |> ignore
@@ -68,12 +77,22 @@ type IServiceCollection with
         // create actor system
         let system = Akka.FSharp.System.create "winery-system" (Akka.FSharp.Configuration.defaultConfig())
         
+        // check with configuration later
+        let isProduction = false
+
+        // get command services depending on app environment
+        let wineCommandExecutioners     = isProduction |> function true | false -> InMemory.wineCommandExecutioners
+        let userCommandExecutioners     = isProduction |> function true | false -> InMemory.userCommandExecutioners
+        let cartCommandExecutioner      = isProduction |> function true | false -> InMemory.cartCommandExecutioner
+        let categoryCommandExecutioners = isProduction |> function true | false -> InMemory.categoryCommandExecutioners
+
+
         // create actor refs
-        let wineActorRef        = spawn system "wineActor" (wineActor wineCommandExecutioners)
-        let userActorRef        = spawn system "userActor" (userActor userCommandExecutioners)
-        let cartActorRef        = spawn system "cartActor" (cartActor cartCommandExecutioner)
-        let commandActorRef     = spawn system "commandActor" commandActor
-        let categoryActorRef    = spawn system "categoryActor" (categoryActor categoryCommandExecutioners)
+        let wineActorRef     = spawn system "wineActor" (wineActor wineCommandExecutioners)
+        let userActorRef     = spawn system "userActor" (userActor userCommandExecutioners)
+        let cartActorRef     = spawn system "cartActor" (cartActor cartCommandExecutioner)
+        let commandActorRef  = spawn system "commandActor" commandActor
+        let categoryActorRef = spawn system "categoryActor" (categoryActor categoryCommandExecutioners)
 
         // actor message receivers
         let cartReceiver       =  getCartReceiver cartActorRef

@@ -107,7 +107,7 @@ let putWine (categoryStringId: string, idString: string): HttpHandler =
 let wineHttpHandlers: HttpHandler = 
     (choose [
         GET >=> choose [
-            routeCif "/categories/%O/wines" getWines
+            routeCif "/categories/%O/wines(/*)" getWines
             routeCif "/categories/%s/wines/search" getWineName
             routeCif "/categories/%s/wines/%s" getWine
         ]

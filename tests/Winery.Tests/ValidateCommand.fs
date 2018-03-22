@@ -12,7 +12,7 @@ let getCommand () =
     let result = { invoked = false}
     let command _ =
         result.invoked <- true
-        Some ()
+        ()
     (result,command)
 
 module CustomerCommands =
@@ -226,106 +226,106 @@ module AdminCommands =
     ////  Tests for 'AddWineCategory'   ////
     ////////////////////////////////////////
     [<Fact>]
-    let ``Should *Return error and *Not-Invoke 'addCategory' when given an unauthorized user``() =
-        let (addCommand, addCategory) = getCommand ()
+    let ``Should *Return error and *Not-Invoke 'addCommand' when given an unauthorized user``() =
+        let (addAction, addCommand) = getCommand ()
         let newcategory = {NewCategory.name="some unique name"; description="some description"}
         
         (customer, newcategory)
-        |> addCategoryWith getSomeCategory addCategory 
+        |> addCategory getSomeCategory addCommand 
         |> shouldBeError
 
-        not addCommand.invoked |> shouldEqual true
+        not addAction.invoked |> shouldEqual true
 
     [<Fact>]
-    let ``Should *Return error and *Not-Invoke 'addCategory' when given an exiting category name``() =
-        let (addCommand, addCategory) = getCommand ()
+    let ``Should *Return error and *Not-Invoke 'addCommand' when given an exiting category name``() =
+        let (addAction, addCommand) = getCommand ()
         let newcategory = {NewCategory.name=existingCategory.name; description="some description"}
         
         (admin, newcategory)
-        |> addCategoryWith getSomeCategory addCategory
+        |> addCategory getSomeCategory addCommand
         |> shouldBeError
 
-        not addCommand.invoked |> shouldEqual true
+        not addAction.invoked |> shouldEqual true
        
     [<Fact>]
-    let ``Should *Return success and *Invoke 'addCategory' when given an authorized user and valid new category``() =
-        let (addCommand, addCategory) = getCommand ()
+    let ``Should *Return success and *Invoke 'addCommand' when given an authorized user and valid new category``() =
+        let (addAction, addCommand) = getCommand ()
         let newcategory = {NewCategory.name="some unique name"; description="some description"}
         
         (admin, newcategory)
-        |> addCategoryWith getNoCategory addCategory
+        |> addCategory getNoCategory addCommand
         |> shouldBeOk
 
-        addCommand.invoked |> shouldEqual true
+        addAction.invoked |> shouldEqual true
          
     ////////////////////////////////////////////
     ////  Tests for 'DeleteWineCategory'   /////
     ////////////////////////////////////////////
     [<Fact>]
-    let ``Should *Return error and *Not-Invoke 'DeleteCategory' when given an categoryId That doesn't exist``() =
-        let (deleteCommand, deleteCategory) = getCommand ()
+    let ``Should *Return error and *Not-Invoke 'deleteCommand' when given an categoryId That doesn't exist``() =
+        let (deleteAction, deleteCommand) = getCommand ()
         
         (admin, CategoryID fakeID)
-        |> removeCategoryWith getNoCategory deleteCategory
+        |> removeCategory getNoCategory deleteCommand
         |> shouldBeError
 
-        not deleteCommand.invoked |> shouldEqual true
+        not deleteAction.invoked |> shouldEqual true
         
     [<Fact>]
-    let ``Should *Return error and *Not-Invoke 'DeleteCategory' when given an unauthorized user``() =
-        let (deleteCommand, deleteCategory) = getCommand ()
+    let ``Should *Return error and *Not-Invoke 'deleteCommand' when given an unauthorized user``() =
+        let (deleteAction, deleteCommand) = getCommand ()
         
         (customer, CategoryID fakeID)
-        |> removeCategoryWith getNoCategory deleteCategory
+        |> removeCategory getNoCategory deleteCommand
         |> shouldBeError
 
-        not deleteCommand.invoked |> shouldEqual true
+        not deleteAction.invoked |> shouldEqual true
 
     [<Fact>]
-    let ``Should *Return success and *Invoke 'DeleteCategory' when given an authorized user and id for an existing category``() =
-        let (deleteCommand, deleteCategory) = getCommand ()
+    let ``Should *Return success and *Invoke 'deleteCommand' when given an authorized user and id for an existing category``() =
+        let (deleteAction, deleteCommand) = getCommand ()
         
         (admin, CategoryID fakeID)
-        |> removeCategoryWith getSomeCategory deleteCategory
+        |> removeCategory getSomeCategory deleteCommand
         |> shouldBeOk
 
-        deleteCommand.invoked |> shouldEqual true
+        deleteAction.invoked |> shouldEqual true
 
     ////////////////////////////////////////////
     ////  Tests for 'UpdateWineCategory'   /////
     ////////////////////////////////////////////
     [<Fact>]
     let ``Should *Return error and *Not-Invoke 'UpdateCategory' when given an unauthorized user``() =
-        let (updateCommand, updateCategory) = getCommand ()
-        let editCategory = {EditCategory.name=Some ""; description=None;}
+        let (updateAction, updateCommand) = getCommand ()
+        let editCategoryInfo = {EditCategory.name=Some ""; description=None;}
 
-        (customer, CategoryID fakeID, editCategory)
-        |> editCategoryWith getSomeCategory updateCategory
+        (customer, CategoryID fakeID, editCategoryInfo)
+        |> editCategory getSomeCategory updateCommand
         |> shouldBeError
 
-        not updateCommand.invoked |> shouldEqual true
+        not updateAction.invoked |> shouldEqual true
 
     [<Fact>]
     let ``Should *Return error and *Not-Invoke 'UpdateCategory' when given an id for a category that doesn't exist``() =
-        let (updateCommand, updateCategory) = getCommand ()
-        let editCategory = {EditCategory.name=Some "some name"; description=None;}
+        let (updateAction, updateCommand) = getCommand ()
+        let editCategoryInfo = {EditCategory.name=Some "some name"; description=None;}
         
-        (admin, CategoryID fakeID, editCategory)
-        |> editCategoryWith getNoCategory updateCategory
+        (admin, CategoryID fakeID, editCategoryInfo)
+        |> editCategory getNoCategory updateCommand
         |> shouldBeError
 
-        not updateCommand.invoked |> shouldEqual true
+        not updateAction.invoked |> shouldEqual true
     
     [<Fact>]
     let ``Should *Return success and *Invoke 'UpdateCategory' when given an authorized user and id for an existing category``() =
-        let (updateCommand, updateCategory) = getCommand ()
-        let editCategory = {EditCategory.name=None; description=Some "new desc";}
+        let (updateAction, updateCommand) = getCommand ()
+        let editCategoryInfo = {EditCategory.name=None; description=Some "new desc";}
         
-        (admin, CategoryID fakeID, editCategory)
-        |> editCategoryWith getSomeCategory updateCategory
+        (admin, CategoryID fakeID, editCategoryInfo)
+        |> editCategory getSomeCategory updateCommand
         |> shouldBeOk
 
-        updateCommand.invoked |> shouldEqual true
+        updateAction.invoked |> shouldEqual true
        
     /////////////////////////////////
     ////  Tests for 'AddWine'   /////
@@ -334,77 +334,77 @@ module AdminCommands =
 
     [<Fact>]
     let ``Should *Return error and *Not-Invoke 'AddWine' when given an unauthorized user``() =
-        let (addCommand, addWine) = getCommand ()
+        let (addAction, addCommand) = getCommand ()
 
         (customer,CategoryID fakeID, newWine)
-        |> addWineWith getSomeCategory getNoWine addWine
+        |> addWine getSomeCategory getNoWine addCommand
         |> shouldBeError
 
-        not addCommand.invoked |> shouldEqual true
+        not addAction.invoked |> shouldEqual true
 
     [<Fact>]
     let ``Should *Return error and *Not-Invoke 'AddWine' when given an invalid category ID``() =
-        let (addCommand, addWine) = getCommand ()        
+        let (addAction, addCommand) = getCommand ()        
 
         (admin,CategoryID fakeID, newWine)
-        |> addWineWith getNoCategory getNoWine addWine
+        |> addWine getNoCategory getNoWine addCommand
         |> shouldBeError
 
-        not addCommand.invoked |> shouldEqual true
+        not addAction.invoked |> shouldEqual true
 
     [<Fact>]
     let ``Should *Return error and *Not-Invoke 'AddWine' when given a name for an existing wine``() =
-        let (addCommand, addWine) = getCommand ()        
+        let (addAction, addCommand) = getCommand ()        
 
         (admin,CategoryID fakeID, newWine)
-        |> addWineWith getSomeCategory getSomeWine addWine
+        |> addWine getSomeCategory getSomeWine addCommand
         |> shouldBeError
 
-        not addCommand.invoked |> shouldEqual true
+        not addAction.invoked |> shouldEqual true
 
     [<Fact>]
-    let ``Should *Return success and *Invoke 'AddWine' when given an authorized user, existing category and new wine info``() =
-        let (addCommand, addWine) = getCommand ()        
+    let ``Should *Return success and *Invoke 'addCommand' when given an authorized user, existing category and new wine info``() =
+        let (addAction, addCommand) = getCommand ()        
 
         (admin,CategoryID fakeID, newWine)
-        |> addWineWith getSomeCategory getNoWine addWine
+        |> addWine getSomeCategory getNoWine addCommand
         |> shouldBeOk
 
-        addCommand.invoked |> shouldEqual true
+        addAction.invoked |> shouldEqual true
 
 
     ////////////////////////////////////
     ////  Tests for 'RemoveWine'   /////
     ////////////////////////////////////
     [<Fact>]
-    let ``Should *Return error and *Not-Invoke 'RemoveWine' when given an unauthorized user``() =
-        let (removeCommand, removeWine) = getCommand ()
+    let ``Should *Return error and *Not-Invoke 'removeWine' when given an unauthorized user``() =
+        let (removeAction, removeCommand) = getCommand ()
        
         (customer, WineID fakeID)
-        |> removeWineWith getSomeWine removeWine
+        |> removeWine getSomeWine removeCommand
         |> shouldBeError
 
-        not removeCommand.invoked |> shouldEqual true
+        not removeAction.invoked |> shouldEqual true
         
     [<Fact>]
-    let ``Should *Return error and *Not-Invoke 'RemoveWine' when given an id for a wine that doesn't exist``() =
-        let (removeCommand, removeWine) = getCommand ()
+    let ``Should *Return error and *Not-Invoke 'removeWine' when given an id for a wine that doesn't exist``() =
+        let (removeAction, removeCommand) = getCommand ()
        
         (admin, WineID fakeID)
-        |> removeWineWith getNoWine removeWine
+        |> removeWine getNoWine removeCommand
         |> shouldBeError
 
-        not removeCommand.invoked |> shouldEqual true
+        not removeAction.invoked |> shouldEqual true
         
     [<Fact>]
-    let ``Should *Return success and *Invoke 'RemoveWine' when given an authorized user and id for an existing wine``() =
-        let (removeCommand, removeWine) = getCommand ()
+    let ``Should *Return success and *Invoke 'removeWine' when given an authorized user and id for an existing wine``() =
+        let (removeAction, removeCommand) = getCommand ()
        
         (admin, WineID fakeID)
-        |> removeWineWith getSomeWine removeWine
+        |> removeWine getSomeWine removeCommand
         |> shouldBeOk
 
-        removeCommand.invoked |> shouldEqual true
+        removeAction.invoked |> shouldEqual true
 
         
     ////////////////////////////////////
@@ -415,53 +415,53 @@ module AdminCommands =
 
     [<Fact>]
     let ``Should *Return error and *Not-Invoke 'UpdateWine' when given an unauthorized user``() =
-        let (updateCommand, updateWine) = getCommand ()
+        let (updateAction, updateWine) = getCommand ()
        
         (customer, (WineID fakeID), editWineName)
-        |> editWineWith getSomeCategory getSomeWine updateWine
+        |> editWine getSomeCategory getSomeWine updateWine
         |> shouldBeError
 
-        not updateCommand.invoked |> shouldEqual true
+        not updateAction.invoked |> shouldEqual true
         
     [<Fact>]
     let ``Should *Return error and *Not-Invoke 'UpdateWine' when given an id for a wine that doesn't exist``() =
-        let (updateCommand, updateWine) = getCommand ()
+        let (updateAction, updateWine) = getCommand ()
        
         (admin, (WineID fakeID), editWineName)
-        |> editWineWith getSomeCategory getNoWine updateWine
+        |> editWine getSomeCategory getNoWine updateWine
         |> shouldBeError
 
-        not updateCommand.invoked |> shouldEqual true
+        not updateAction.invoked |> shouldEqual true
     
     [<Fact>]
     let ``Should *Return error and *Not-Invoke 'UpdateWine' when given a name for a wine that exists``() =
-        let (updateCommand, updateWine) = getCommand ()
+        let (updateAction, updateWine) = getCommand ()
        
         (admin, (WineID fakeID), editWineName)
-        |> editWineWith getNoCategory getSomeWine updateWine
+        |> editWine getNoCategory getSomeWine updateWine
         |> shouldBeError
 
-        not updateCommand.invoked |> shouldEqual true
+        not updateAction.invoked |> shouldEqual true
 
     [<Fact>]
     let ``Should *Return error and *Not-Invoke 'UpdateWine' when given an id for a category that doesn't exist``() =
-        let (updateCommand, updateWine) = getCommand ()
+        let (updateAction, updateWine) = getCommand ()
        
         (admin, (WineID fakeID), editWinePath)
-        |> editWineWith getNoCategory getNoWine updateWine
+        |> editWine getNoCategory getNoWine updateWine
         |> shouldBeError
 
-        not updateCommand.invoked |> shouldEqual true
+        not updateAction.invoked |> shouldEqual true
     
     [<Fact>]
     let ``Should *Return success and *Invoke 'UpdateWine' when given an authorized user, valid category and wine id``() =
-        let (updateCommand, updateWine) = getCommand ()
+        let (updateAction, updateWine) = getCommand ()
 
         (admin, (WineID fakeID), editWinePath)
-        |> editWineWith getSomeCategory getSomeWine updateWine
+        |> editWine getSomeCategory getSomeWine updateWine
         |> shouldBeOk
 
-        updateCommand.invoked |> shouldEqual true
+        updateAction.invoked |> shouldEqual true
 
        
     /////////////////////////////////////////
@@ -469,32 +469,32 @@ module AdminCommands =
     /////////////////////////////////////////
     [<Fact>]
     let ``Should *Return error and *Not-Invoke 'UpdateQuantity' when given an unauthorized user``() =
-        let (updateCommand, updateQuantity) = getCommand ()
+        let (updateAction, updateQuantity) = getCommand ()
         
         (customer, (WineID fakeID), 5us)
-        |> editQuantityWith getSomeWine updateQuantity
+        |> editQuantity getSomeWine updateQuantity
         |> shouldBeError
 
-        not updateCommand.invoked |> shouldEqual true
+        not updateAction.invoked |> shouldEqual true
 
     
     [<Fact>]
     let ``Should *Return error and *Not-Invoke 'UpdateQuantity' when given an id for a wine that doesn't exist``() =
-        let (updateCommand, updateQuantity) = getCommand ()
+        let (updateAction, updateQuantity) = getCommand ()
         
         (admin, (WineID fakeID), 5us)
-        |> editQuantityWith getNoWine updateQuantity
+        |> editQuantity getNoWine updateQuantity
         |> shouldBeError
 
-        not updateCommand.invoked |> shouldEqual true
+        not updateAction.invoked |> shouldEqual true
 
     
     [<Fact>]
     let ``Should *Return success and *Invoke 'UpdateQuantity' when given an authorized user and id for existing wine``() =
-        let (updateCommand, updateQuantity) = getCommand ()
+        let (updateAction, updateQuantity) = getCommand ()
         
         (admin, (WineID fakeID), 5us)
-        |> editQuantityWith getSomeWine updateQuantity
+        |> editQuantity getSomeWine updateQuantity
         |> shouldBeOk
 
-        updateCommand.invoked |> shouldEqual true
+        updateAction.invoked |> shouldEqual true
