@@ -1,164 +1,346 @@
 module Storage.FileStore
 
 open Winery
+open System
 open System.IO
-open FSharp.Data
 open Newtonsoft.Json
+open Storage.InMemory
+open System.Collections.Generic
+open Newtonsoft.Json.Serialization
 
 [<Literal>]
 let Path = "./Infrastructure/Storage/FileStore/Store.json"
 
-type Store = JsonProvider<Path> 
+type private FileStore = InMemoryStore
 
-let storage () = Store.GetSample ()
+let private getStoreAsString () = File.ReadAllText(Path)
 
-/////////////////////////
-////  Type Transforms
-/////////////////////////
-let wineToExistingWine (wine: Store.Wine) = {id = wine.Id; categoryID=wine.CategoryId; name=wine.Name; description=wine.Description; year=wine.Year; price=wine.Price; imagePath=wine.ImagePath }
-let categoryToExistingCategory (cat: Store.Category) = { id=cat.Id; name=cat.Name; description=cat.Description; wines=cat.Wines |> (Seq.map wineToExistingWine >> Seq.toList) }
-let toDomainCartItem getWine (item: Store.Item) = { User.CartItem.id=item.Id; product= item.ProductId |> getWine |> wineToExistingWine; quantity=(uint16) item.Quantity }
-let toDomainCart getWine (cart: Store.Cart) = { userId=cart.UserId; items=cart.Items |> Seq.map (toDomainCartItem getWine) |> Seq.toArray }
-let userToExistingUser (user: Store.User) = { id = user.Id; firstName = user.FirstName; lastName = user.LastName; email = user.Email; role = user.Role |> function "admin" -> Administrator | _ -> Customer }
+let jsonSettings = 
+    let contractResolver = DefaultContractResolver(NamingStrategy = new CamelCaseNamingStrategy())
+    let settings = JsonSerializerSettings(ContractResolver = contractResolver, Formatting = Formatting.Indented)
+    settings
 
+let storage = fun () -> JsonConvert.DeserializeObject<FileStore>(getStoreAsString(), jsonSettings)
 
 /////////////////////////
 ////  Queries
 /////////////////////////
 
-let private queryCategoryById  = fun (CategoryID catId) -> 
-    storage()
-    |> fun s -> s.Categories
-    |> Seq.where (fun c -> c.Id = catId)
+let private queryCategoryById (storage: FileStore) = fun (CategoryID catId) -> 
+    storage
+    |> fun s -> s.categories
+    |> Seq.where (fun c -> c.id = catId)
     |> Seq.tryHead
 
-let private queryCategoryByName = fun (CategoryName catName) ->
-    storage()
-    |> fun s -> s.Categories
-    |> Seq.where (fun c -> c.Name = catName)
+let private queryCategoryByName (storage: FileStore) = fun (CategoryName catName) ->
+    storage
+    |> fun s -> s.categories
+    |> Seq.where (fun c -> c.name = catName)
     |> Seq.tryHead
         
-let private queryWines = fun () ->
-    storage()
-    |> fun s -> s.Categories
-    |> Seq.map (fun c -> c.Wines)
+let private queryWines (storage: FileStore) =
+    storage
+    |> fun s -> s.categories
+    |> Seq.map (fun c -> c.wines)
     |> Seq.collect id
 
-let private queryWineByName = fun (WineName name) ->
-    queryWines () |> Seq.tryFind (fun w -> w.Name = name)
+let private queryWineByName (storage: FileStore) = fun (WineName name) ->
+    queryWines storage |> Seq.tryFind (fun w -> w.name = name)
 
-let private queryWineById = fun (WineID wineId) -> 
-    queryWines () |> Seq.tryFind (fun w -> w.Id = wineId)
+let private queryWineById (storage: FileStore) = fun (WineID wineId) -> 
+    queryWines storage |> Seq.tryFind (fun w -> w.id = wineId)
         
-let private queryWinesInCategory = fun (catId) ->
+let private queryWinesInCategory (storage: FileStore) = fun (catId) ->
     catId
-    |> queryCategoryById 
-    |> Option.map (fun categories -> categories.Wines )
+    |> queryCategoryById storage
+    |> Option.map (fun categories -> categories.wines )
 
-let private queryWineInCategoryByCriteria = fun categoryId criteria ->
+let private queryWineInCategoryByCriteria (storage: FileStore) = fun categoryId criteria ->
     categoryId
-    |> queryWinesInCategory 
+    |> queryWinesInCategory storage
     |> Option.bind (Seq.tryFind criteria)
 
-let private queryWineInCategoryById = fun (catId) (WineID wineId) -> 
-    queryWineInCategoryByCriteria catId (fun w -> w.Id = wineId)
+let private queryWineInCategoryById (storage: FileStore) = fun (catId) (WineID wineId) -> 
+    queryWineInCategoryByCriteria storage catId (fun w -> w.id = wineId)
 
-let private queryWineInCategoryByName = fun (catId) (WineName wineName) ->
-    queryWineInCategoryByCriteria catId (fun w -> w.Name = wineName)
+let private queryWineInCategoryByName (storage: FileStore) = fun (catId) (WineName wineName) ->
+    queryWineInCategoryByCriteria storage catId (fun w -> w.name = wineName)
 
-let private queryUserCart = fun (userId) ->
-    storage() 
-    |> fun s -> s.Carts
-    |> Seq.tryFind (fun c -> c.UserId = userId)
+let private queryUserCart (storage: FileStore) = fun (userId) ->
+    storage
+    |> fun s -> s.carts
+    |> Seq.tryFind (fun c -> c.userId = userId)
 
-let private queryUserByName = fun (UserName name) ->
-    storage()
-    |> fun s -> s.Users
-    |> Seq.tryFind (fun u -> u.Email = name)
+let private queryUserByName (storage: FileStore) = fun (UserName name) ->
+    storage
+    |> fun s -> s.users
+    |> Seq.tryFind (fun u -> u.email = name)
 
-let private queryUserById = fun (UserID id) ->
-    storage() 
-    |> fun s -> s.Users 
-    |> Seq.tryFind (fun u -> u.Id = id)
+let private queryUserById (storage: FileStore) = fun (UserID id) ->
+    storage
+    |> fun s -> s.users 
+    |> Seq.tryFind (fun u -> u.id = id)
 
 /////////////////////////
 ////  Query Stubs
 /////////////////////////
-let private getCategories = fun () -> 
-    storage() 
-    |> fun s -> s.Categories 
+let private getCategories (storage: FileStore) = fun () ->
+    storage
+    |> fun s -> s.categories 
     |> Seq.map categoryToExistingCategory 
     |> Seq.toList
 
-let private getCategoryById = fun (categoryId) ->
-    categoryId |> (queryCategoryById >> Option.map categoryToExistingCategory)
+let private getCategoryById (storage: FileStore) = fun (categoryId) ->
+    categoryId |> ((queryCategoryById storage) >> Option.map categoryToExistingCategory)
 
-let private getCategoryByName = fun (categoryName) ->
-    categoryName |> (queryCategoryByName >> Option.map categoryToExistingCategory)
+let private getCategoryByName (storage: FileStore) = fun (categoryName) ->
+    categoryName |> ((queryCategoryByName storage) >> Option.map categoryToExistingCategory)
 
-let private getCategoryByIDorName = function
-    | ID categoryId -> getCategoryById categoryId  
-    | Name categoryName -> getCategoryByName categoryName
+let private getWines (storage: FileStore) = fun () -> queryWines storage |> Seq.map wineToExistingWine |> Seq.toList
 
-let private getWines = fun () -> queryWines () |> Seq.map wineToExistingWine |> Seq.toList
+let private getWineByName (storage: FileStore) = fun (wineName) -> wineName  |> ((queryWineByName storage) >> Option.map wineToExistingWine)
 
-let private getWineByName = fun (wineName) -> wineName  |> (queryWineByName >> Option.map wineToExistingWine)
+let private getWineById (storage: FileStore) = fun (wineId) -> wineId |> ((queryWineById storage) >> Option.map wineToExistingWine)
 
-let private getWineById = fun (wineId) -> wineId |> (queryWineById >> Option.map wineToExistingWine)
+let private getWinesInCategory (storage: FileStore) = fun (catId) -> catId |> ((queryWinesInCategory storage) >> Option.map (Seq.map wineToExistingWine) >> Option.map List.ofSeq)
 
-let private getWinesInCategory = fun (catId) -> catId |> (queryWinesInCategory >> Option.map (Seq.map wineToExistingWine) >> Option.map List.ofSeq)
+let private getWineInCategoryById (storage: FileStore) = fun catId wineId -> (catId,wineId) ||> (queryWineInCategoryById storage) |> Option.map wineToExistingWine 
 
-let private getWineInCategoryById = fun catId wineId -> (catId,wineId) ||> queryWineInCategoryById |> Option.map wineToExistingWine 
+let private getWineInCategoryByName (storage: FileStore) = fun catId wineName -> (catId, wineName) ||> (queryWineInCategoryByName storage) |> Option.map wineToExistingWine
 
-let private getWineInCategoryByName = fun catId wineName -> (catId, wineName) ||> queryWineInCategoryByName |> Option.map wineToExistingWine
+let private getUserCart (storage: FileStore) = fun (UserID userId) -> 
+    // get the value of the option 
+    let getWine = (WineID >> (getWineById storage) >> Option.get)
+    userId |> (queryUserCart storage) |> Option.map (toDomainCart getWine) 
 
-let private getUserCart = fun (UserID userId) -> 
-    let getWine id = queryWines () |> Seq.where (fun w -> w.Id = id) |> Seq.head
-    userId |> queryUserCart |> Option.map (toDomainCart getWine) 
+let private getUserByName (storage: FileStore) = fun (userName) -> userName |> (queryUserByName storage) |> Option.map (fun user -> (userToExistingUser user, Password user.password))
 
-let private getUserByName = fun (userName) -> userName |> queryUserByName |> Option.map (fun user -> (userToExistingUser user, Password user.Password))
-
-let private getUserById = fun (userId) -> userId |> queryUserById |> Option.map (fun user -> userToExistingUser user, Password user.Password)
+let private getUserById (storage: FileStore) = fun (userId) -> userId |> (queryUserById storage) |> Option.map (fun user -> userToExistingUser user, Password user.password)
 
 
 /////////////////////////
 ////  Commands
 /////////////////////////
-let private getStoreAsString () = File.ReadAllText(Path)
 
+let saveChanges (store: FileStore) = 
+    use streamWriter = File.CreateText(Path)
+    let serializer = JsonSerializer.Create(jsonSettings)
+    do serializer.Serialize(streamWriter, store)
+    
+let private addCategory = fun (CategoryID id, category) ->
+    let storage =  storage()
+
+    (id, category)
+    |> newCategoryToCategory 
+    |> storage.categories.Add
+    |> fun () -> saveChanges storage
+    |> fun () -> Ok "Category added successfully."
+
+let private removeCategory =
+
+    let removeCartItems storage (wineIds: Guid list) = 
+        for cart in storage.carts do
+            cart.items.RemoveAll (fun i -> List.contains i.productId wineIds)
+            |> ignore
+    
+    fun (categoryId) ->
+        let storage = storage()
+
+        categoryId
+        |> queryCategoryById storage
+        |> Option.map (fun category -> 
+            category.wines
+            |> Seq.map (fun w -> w.id)
+            |> List.ofSeq
+            |> removeCartItems storage
+            |> fun _ -> category)
+        |> Option.map storage.categories.Remove
+        |> Option.map (fun _ -> saveChanges storage)
+        |> function
+            | Some _ -> Ok "Category was removed sucessfully."
+            | None   -> Error "Unable to remove Category, please try again."
+
+let private updateCategory =
+
+    let update (editCategory: EditCategory) (category: Category) =
+        // extremely ugly way
+        if (editCategory.name.IsSome) then category.name <- editCategory.name.Value
+        if (editCategory.description.IsSome) then category.description <- editCategory.description.Value
+
+    fun (categoryId, editCategory) ->
+        let storage = storage () 
+        
+        categoryId
+        |> queryCategoryById storage
+        |> Option.map (update editCategory)
+        |> Option.map (fun _ -> saveChanges storage)
+        |> function
+            | Some _ -> Ok "Category was updated sucessfully."
+            | None   -> Error "Unable to update Category, please try again."
+
+let private addWine = 
+
+    let add = fun storage (wine:Wine) -> 
+        wine.categoryId
+        |> ((queryCategoryById storage) << CategoryID) 
+        |> Option.map (fun category -> category.wines.Add wine)
+        |> Option.map (fun _ -> saveChanges storage)
+        |> function
+            | Some _ -> Ok "Wine was added sucessfully."
+            | None   -> Error "Unable to add Wine, please try again."
+
+    fun (CategoryID catId, WineID id, wine) ->
+        let storage = storage ()
+        
+        (catId, id, wine)
+        |> newWineToWine
+        |> add storage
+
+let private removeWine = 
+
+    let removeCartItems = fun storage wineId -> 
+        for cart in storage.carts do
+            cart.items.RemoveAll (fun item -> item.productId = wineId)
+            |> ignore
+
+    let remove = fun storage (wine: Wine) -> 
+        wine.categoryId
+        |> ((queryCategoryById storage) << CategoryID)
+        |> Option.map (fun category -> category.wines.Remove wine)
+        |> Option.map (fun _ -> removeCartItems storage wine.id)
+
+    fun (wineId) ->
+        let storage = storage()
+
+        wineId
+        |> queryWineById storage
+        |> Option.bind (remove storage)
+        |> Option.map (fun _ -> saveChanges storage)
+        |> function
+            | Some _ -> Ok "Wine was removed sucessfully."
+            | None   -> Error "Unable to remove Wine, please try again."
+
+let private updateWine = 
+
+    let update = fun (editWine: EditWine) (wine: Wine) ->
+        // extremely ugly way
+        if (editWine.name.IsSome) then wine.name <- editWine.name.Value
+        if (editWine.description.IsSome) then wine.name <- editWine.name.Value
+        if (editWine.price.IsSome) then wine.price <- editWine.price.Value
+        if (editWine.year.IsSome) then wine.year <- editWine.year.Value
+        if (editWine.categoryID.IsSome) then wine.categoryId <- editWine.categoryID.Value
+        
+    fun (wineId, editWine) ->
+        let storage = storage()
+
+        wineId
+        |> queryWineById storage
+        |> Option.map (update editWine)
+        |> Option.map (fun _ -> saveChanges storage)
+        |> function
+            | Some _ -> Ok "Wine was updated sucessfully."
+            | None   -> Error "Unable to update Wine, please try again."
+
+let private addCartItem = fun (UserID userId, cartItem) ->
+    let storage = storage ()
+
+    userId
+    |> queryUserCart storage
+    |> function 
+         | Some cart -> (cart.items.Add << toCartItem) cartItem
+         | None -> cartItem 
+                    |> toCartItem 
+                    |> fun item -> {userId=userId; items=List<CartItem>([item]) } 
+                    |>  storage.carts.Add 
+    |> fun () -> Ok "Item added to cart successfully."
+
+let private removeCartItem = fun (UserID userId, ItemID cartItemId) ->
+    let storage = storage ()
+
+    userId
+    |> queryUserCart storage
+    |> Option.bind (fun cart ->
+        cart.items
+        |> Seq.tryFind (fun item -> item.id = cartItemId)
+        |> Option.map cart.items.Remove )
+    |> Option.map (fun _ -> saveChanges storage)
+    |> function
+        | Some _ -> Ok "Item was removed sucessfully."
+        | None   -> Error "Unable to remove item, please try again." 
+
+let private updateQuantity = fun (UserID userId, ItemID cartItemId, quantity) ->
+    let storage = storage ()
+
+    userId
+    |> queryUserCart storage
+    |> Option.bind (fun cart ->
+        cart.items
+        |> Seq.tryFind (fun item -> item.id = cartItemId)
+        |> Option.map (fun  item -> item.quantity <- quantity) ) 
+    |> Option.map (fun _ -> saveChanges storage)       
+    |> function
+        | Some _ -> Ok "Item quantity was updated sucessfully."
+        | None   -> Error "Unable to update item, please try again."
+
+let private addUser = fun (UserID id, newUser, Password password) ->
+    let storage = storage ()
+
+    (id,newUser,password) 
+    |> newUserToUser 
+    |> storage.users.Add 
+    |> fun () -> saveChanges storage
+    |> fun () -> Ok "User account was created sucessfully."
+            
+let private updateUser =
+
+    let update (editUser: EditUser) (user: User) = 
+        if (editUser.email.IsSome) then user.email <- editUser.email.Value
+        if (editUser.firstName.IsSome) then user.firstName <- editUser.firstName.Value
+        if (editUser.lastName.IsSome) then user.lastName <- editUser.lastName.Value
+
+    fun (userId, editUser) ->
+        let storage = storage ()
+
+        userId 
+        |> queryUserById storage
+        |> Option.map (update editUser)  
+        |> Option.map (fun _ -> saveChanges storage)      
+        |> function
+            | Some _ -> Ok "User information update was sucessfully."
+            | None   -> Error "Unable to update User information, please try again."
 
 
 /////////////////////////
-////  In Memory Models
+////  FileStore Models
 /////////////////////////
 let categoryQueries: CategoryQueries = 
-    { getCategoryById = getCategoryById
-      getCategoryByName = getCategoryByName
-      getCategories = getCategories }
+    { getCategories      = fun arg -> (storage(), arg) ||> getCategories  
+      getCategoryById    = fun arg -> (storage(), arg) ||> getCategoryById 
+      getCategoryByName  = fun arg -> (storage(), arg) ||> getCategoryByName  }
 
-// let categoryCommandExecutioners: CategoryCommandExecutioners =
-//     { addCategory = addCategory
-//       updateCategory = updateCategory
-//       deleteCategory = removeCategory }
+let categoryCommandExecutioners: CategoryCommandExecutioners =
+    { addCategory    = addCategory
+      updateCategory = updateCategory
+      deleteCategory = removeCategory }
 
 let wineQueries: WineQueries = 
-    { getWines = getWines
-      getWineById = getWineById
-      getWineByName = getWineByName
-      getWinesInCategory = getWinesInCategory
-      getWineInCategoryByName = getWineInCategoryByName
-      getWineInCategoryById = getWineInCategoryById }
+    { getWines                 = fun arg -> (storage(), arg) ||> getWines
+      getWineById              = fun arg -> (storage(), arg) ||> getWineById 
+      getWineByName            = fun arg -> (storage(), arg) ||> getWineByName
+      getWinesInCategory       = fun arg -> (storage(), arg) ||> getWinesInCategory
+      getWineInCategoryById    = fun arg -> (storage(), arg) ||> getWineInCategoryById 
+      getWineInCategoryByName  = fun arg -> (storage(), arg) ||> getWineInCategoryByName }
 
-// let wineCommandExecutioners: WineCommandExecutioners = 
-//     { addWine = addWine
-//       updateWine = updateWine
-//       deleteWine = removeWine }
+let wineCommandExecutioners: WineCommandExecutioners = 
+    { addWine     = addWine
+      updateWine  = updateWine
+      deleteWine  = removeWine }
 
-let cartQuery: CartQuery = getUserCart
-// let cartCommandExecutioner: CartCommandExecutioner = function 
-//     | AddItem (userId, cartItem) -> addCartItem (userId, cartItem)
-//     | RemoveItem (userId, itemId) -> removeCartItem (userId, itemId)
-//     | UpdateQuantity (userId, itemId, quantity) -> updateQuantity (userId, itemId, quantity)
+let cartQuery: CartQuery = getUserCart (storage())
+let cartCommandExecutioner: CartCommandExecutioner = function 
+    | AddItem        (userId, cartItem)         -> addCartItem (userId, cartItem)
+    | RemoveItem     (userId, itemId)           -> removeCartItem (userId, itemId)
+    | UpdateQuantity (userId, itemId, quantity) -> updateQuantity (userId, itemId, quantity)
 
-let userQuery: UserQueries = { getUser = function | Name n -> getUserByName n | ID i -> getUserById i }
-// let userCommandExecutioners: UserCommandExecutioners = { addUser = addUser; updateUser = updateUser }
+let userQuery: UserQueries = { getUser = function | Name n -> getUserByName (storage()) n | ID i -> getUserById (storage()) i }
+let userCommandExecutioners: UserCommandExecutioners = { addUser = addUser; updateUser = updateUser }

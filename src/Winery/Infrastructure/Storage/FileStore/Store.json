@@ -1,51 +1,76 @@
 {
-    "categories": [
+  "categories": [
+    {
+      "id": "4ec87f06-4d1e-41b4-9342-ab1aead1f99d",
+      "name": "Sparkling File",
+      "description": "A very fizzy type of wine with Champagne as a typical example.",
+      "wines": [
         {
-            "id": "4ec87f064d1e41b49342ab1aead1f99d",
-            "name": "Sparkling", 
-            "description": "A very fizzy type of wine with Champagne as a typical example.", 
-            "wines": [
-                {  
-                    "id": "2a6c918595d94d8c80a6575f99c2a716", 
-                    "name": "Edone Grand Cuvee Rose", 
-                    "description": "A Sample descripition that will be changed", 
-                    "year": 2014, 
-                    "price": 14.4, 
-                    "categoryId": "4ec87f064d1e41b49342ab1aead1f99d", 
-                    "imagePath": "img/Sparkling/grand-cuvee.jpg"
-                },
-                { 
-                    "id": "699fb6e489774ab6ae892b7702556eba", 
-                    "name": "Raventós i Blanc de Nit",
-                    "description": "A Sample description that will be changed", 
-                    "year": 2012, 
-                    "price": 24.4, 
-                    "categoryId": "4ec87f064d1e41b49342ab1aead1f99d", 
-                    "imagePath": "img/Sparkling/grand-cuvee.jpg"
-                }
-            ]
-        }
-    ],
-    "users": [
+          "id": "2a6c9185-95d9-4d8c-80a6-575f99c2a716",
+          "name": "Edone Grand Cuvee Rose",
+          "description": "A Sample descripition that will be changed",
+          "year": 2014,
+          "price": 14.4,
+          "categoryId": "4ec87f06-4d1e-41b4-9342-ab1aead1f99d",
+          "imagePath": "img/Sparkling/grand-cuvee.jpg"
+        },
         {
-            "id": "4ec87f064d1e41b49342ab1aead1f99d", 
-            "email": "Admin", 
-            "firstName": "Admin", 
-            "lastName": "Admin", 
-            "role": "admin", 
-            "password": "$2b$10$0bduag.RSVwW8T8BLBsCQ.LrMPQ5xVyJnKUvcP9w6CqeN77ePQY36" 
-        }
-    ],
-    "carts": [
+          "id": "699fb6e4-8977-4ab6-ae89-2b7702556eba",
+          "name": "Raventós i Blanc de Nit",
+          "description": "A Sample description that will be changed",
+          "year": 2012,
+          "price": 24.4,
+          "categoryId": "4ec87f06-4d1e-41b4-9342-ab1aead1f99d",
+          "imagePath": "img/Sparkling/grand-cuvee.jpg"
+        },
         {
-            "userId": "4ec87f064d1e41b49342ab1aead1f99d",
-            "items": [
-                {
-                    "id": "4ec87f064d1e41b49342ab1aead1f99d",
-                    "productId": "699fb6e489774ab6ae892b7702556eba",
-                    "quantity": 1
-                }
-            ] 
+          "id": "dda5e22c-593b-45b5-b106-60170dec5784",
+          "name": "Carbonet Wines",
+          "description": "The all new Sparkling Wine with the dried tastes of iced grapes",
+          "year": 1390,
+          "price": 45.0,
+          "categoryId": "4ec87f06-4d1e-41b4-9342-ab1aead1f99d",
+          "imagePath": "some image path"
         }
-    ]
+      ]
+    },
+    {
+      "id": "52f0dc83-5461-434a-ba70-dd72a6005dfc",
+      "name": "Red Wine",
+      "description": "A group of wines made out of fermented dry frozen grapes",
+      "wines": [
+        {
+          "id": "0552f2be-a48f-48a7-b651-e52a6eef76e4",
+          "name": "Some Wines",
+          "description": "American Image",
+          "year": 1390,
+          "price": 35.0,
+          "categoryId": "52f0dc83-5461-434a-ba70-dd72a6005dfc",
+          "imagePath": "some image path"
+        }
+      ]
+    }
+  ],
+  "carts": [
+    {
+      "userId": "4ec87f06-4d1e-41b4-9342-ab1aead1f99d",
+      "items": [
+        {
+          "id": "4ec87f06-4d1e-41b4-9342-ab1aead1f99d",
+          "productId": "699fb6e4-8977-4ab6-ae89-2b7702556eba",
+          "quantity": 1
+        }
+      ]
+    }
+  ],
+  "users": [
+    {
+      "id": "4ec87f06-4d1e-41b4-9342-ab1aead1f99d",
+      "email": "Admin",
+      "lastName": "Admin",
+      "firstName": "Admin",
+      "role": "admin",
+      "password": "$2b$10$0bduag.RSVwW8T8BLBsCQ.LrMPQ5xVyJnKUvcP9w6CqeN77ePQY36"
+    }
+  ]
 }

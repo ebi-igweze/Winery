@@ -4,11 +4,11 @@ open System
 
 type UserRole = 
 | Customer
-| Administrator
-    with override this.ToString () = 
-            match this with
-            | Customer -> "customer"
-            | Administrator -> "admin"
+| Administrator with 
+    override this.ToString () = 
+        match this with
+        | Customer -> "customer"
+        | Administrator -> "admin"
 
 type NewUser =
     { email: string

@@ -3,33 +3,45 @@ module Storage.InMemory
 open System.Collections.Generic
 open Winery
 open System
+open System.Runtime.Serialization
 
+[<CLIMutable>]
+[<DataContract>]
 type Wine = 
-    { mutable id: Guid
-      mutable name: string
-      mutable description: string
-      mutable year: int32
-      mutable price: decimal
-      mutable categoryId: Guid
-      mutable imagePath: string }
+    { [<DataMember>] mutable id: Guid
+      [<DataMember>] mutable name: string
+      [<DataMember>] mutable description: string
+      [<DataMember>] mutable year: int32
+      [<DataMember>] mutable price: decimal
+      [<DataMember>] mutable categoryId: Guid
+      [<DataMember>] mutable imagePath: string }
 
+[<CLIMutable>]
+[<DataContract>]
 type Category = 
-    { mutable id: Guid
-      mutable name: string
-      mutable description: string
-      mutable wines: List<Wine> }
+    { [<DataMember>] mutable id: Guid
+      [<DataMember>] mutable name: string
+      [<DataMember>] mutable description: string
+      [<DataMember>] mutable wines: List<Wine> }
 
+[<CLIMutable>]
+[<DataContract>]
 type User = 
-    { mutable id: Guid
-      mutable email: string
-      mutable lastName: string
-      mutable firstName: string
-      mutable role: string
-      mutable password: string }
+    { [<DataMember>] mutable id: Guid
+      [<DataMember>] mutable email: string
+      [<DataMember>] mutable lastName: string
+      [<DataMember>] mutable firstName: string
+      [<DataMember>] mutable role: string
+      [<DataMember>] mutable password: string }
 
-type CartItem = { mutable id: Guid; mutable product: ExistingWine; mutable quantity: uint16 }
+[<CLIMutable>]
+[<DataContract>]
+type CartItem = { [<DataMember>] mutable id: Guid; [<DataMember>] mutable productId: Guid; [<DataMember>] mutable quantity: uint16 }
+
+[<CLIMutable>]
 type Cart = { userId: Guid; items: List<CartItem> }
     
+[<CLIMutable>]
 type InMemoryStore = { categories: List<Category>; carts: List<Cart>; users: List<User> }
 
 /////////////////////////
@@ -39,9 +51,9 @@ let wineToExistingWine (wine: Wine) = {id=wine.id; categoryID=wine.categoryId; n
 let newWineToWine (categoryID: Guid, id: Guid, newWine: NewWine) = { Wine.id=id; categoryId=categoryID; name=newWine.name; description=newWine.description; year=newWine.year; price=newWine.price; imagePath=newWine.imagePath }
 let categoryToExistingCategory (cat: Category) = { ExistingCategory.id=cat.id; name=cat.name; description=cat.description; wines=cat.wines |> (Seq.map wineToExistingWine >> Seq.toList) }
 let newCategoryToCategory (id: Guid, cat: NewCategory) = { Category.id=id; name=cat.name; description=cat.description; wines=List<Wine>() }
-let toCartItem (item: User.CartItem) = { CartItem.id=item.id; product=item.product; quantity=item.quantity }
-let toDomainCartItem (item: CartItem) = { User.CartItem.id=item.id; product=item.product; quantity=item.quantity }
-let toDomainCart (cart: Cart) = { User.Cart.userId=cart.userId; items=cart.items |> Seq.map toDomainCartItem |> Seq.toArray }
+let toCartItem (item: User.CartItem) = { CartItem.id=item.id; productId=item.product.id; quantity=item.quantity }
+let toDomainCartItem getWine (item: CartItem) = { User.CartItem.id=item.id; product=(getWine item.productId); quantity=item.quantity }
+let toDomainCart getWine (cart: Cart) = { User.Cart.userId=cart.userId; items=cart.items |> Seq.map (toDomainCartItem getWine) |> Seq.toArray }
 let userToExistingUser (user: User) = { ExistingUser.id = user.id; firstName = user.firstName; lastName = user.lastName; email = user.email; role = user.role |> function "admin" -> Administrator | _ -> Customer }
 let newUserToUser (id, user: NewUser, password) = { email = user.email; id = id; firstName = user.firstName; lastName = user.lastName; password = password; role = user.role |> function Administrator -> "admin" | _ -> "customer" }
 
@@ -140,10 +152,21 @@ let private addCategory =
         |> storage.categories.Add
         |> fun () -> Ok "Category added successfully."
 
-let private removeCategory =
+let private removeCategory =    
+    let removeCartItems (wineIds: Guid list) = 
+        for cart in storage.carts do
+            cart.items.RemoveAll (fun i -> List.contains i.productId wineIds)
+            |> ignore
+    
     fun (categoryId) ->
         categoryId
         |> queryCategoryById
+        |> Option.map (fun category -> 
+            category.wines
+            |> Seq.map (fun w -> w.id)
+            |> List.ofSeq
+            |> removeCartItems
+            |> fun _ -> category)
         |> Option.map storage.categories.Remove
         |> function
             | Some _ -> Ok "Category was removed sucessfully."
@@ -177,11 +200,17 @@ let private addWine =
         |> newWineToWine
         |> add
 
-let private removeWine = 
+let private removeWine =
+    let removeCartItems = fun wineId -> 
+        for cart in storage.carts do
+            cart.items.RemoveAll (fun item -> item.productId = wineId)
+            |> ignore
+ 
     let remove = fun (wine: Wine) -> 
         wine.categoryId
         |> (queryCategoryById << CategoryID)
         |> Option.map (fun category -> category.wines.Remove wine)
+        |> Option.map (fun _ -> removeCartItems wine.id)
 
     fun (wineId) ->
         wineId
@@ -273,10 +302,6 @@ let private getCategoryById = fun (categoryId) ->
 let private getCategoryByName = fun (categoryName) ->
     categoryName |> (queryCategoryByName >> Option.map categoryToExistingCategory)
 
-let private getCategoryByIDorName = function
-    | ID categoryId -> getCategoryById categoryId  
-    | Name categoryName -> getCategoryByName categoryName
-
 let private getWines = fun () -> queryWines () |> Seq.map wineToExistingWine |> Seq.toList
 
 let private getWineByName = fun (wineName) -> wineName  |> (queryWineByName >> Option.map wineToExistingWine)
@@ -289,7 +314,10 @@ let private getWineInCategoryById = fun catId wineId -> (catId,wineId) ||> query
 
 let private getWineInCategoryByName = fun catId wineName -> (catId, wineName) ||> queryWineInCategoryByName |> Option.map wineToExistingWine
 
-let private getUserCart = fun (UserID userId) -> userId |> queryUserCart |> Option.map toDomainCart
+let private getUserCart = fun (UserID userId) -> 
+    // get the value of the option 
+    let getWine = (WineID >> getWineById >> Option.get)
+    userId |> queryUserCart |> Option.map (toDomainCart getWine)
 
 let private getUserByName = fun (userName) -> userName |> queryUserByName |> Option.map (fun user -> (userToExistingUser user, Password user.password))
 

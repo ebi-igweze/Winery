@@ -57,10 +57,10 @@ type IServiceCollection with
             .AddJwtBearer(Action<JwtBearerOptions> jwtOptions)  |> ignore
         this.AddSingleton(authService)                          |> ignore
 
-    member this.AddWineryServices() =
+    member this.AddWineryServices() =        
         // check with configurations later
         let isProduction = true
-        
+
         // get service depending on app environment
         let userQuery       = isProduction |> function | true -> FileStore.userQuery | false -> InMemory.userQuery
         let cartQuery       = isProduction |> function | true -> FileStore.cartQuery | false -> InMemory.cartQuery
@@ -78,14 +78,13 @@ type IServiceCollection with
         let system = Akka.FSharp.System.create "winery-system" (Akka.FSharp.Configuration.defaultConfig())
         
         // check with configuration later
-        let isProduction = false
+        let isProduction = true
 
         // get command services depending on app environment
-        let wineCommandExecutioners     = isProduction |> function true | false -> InMemory.wineCommandExecutioners
-        let userCommandExecutioners     = isProduction |> function true | false -> InMemory.userCommandExecutioners
-        let cartCommandExecutioner      = isProduction |> function true | false -> InMemory.cartCommandExecutioner
-        let categoryCommandExecutioners = isProduction |> function true | false -> InMemory.categoryCommandExecutioners
-
+        let wineCommandExecutioners     = isProduction |> function true -> FileStore.wineCommandExecutioners      | false -> InMemory.wineCommandExecutioners
+        let userCommandExecutioners     = isProduction |> function true -> FileStore.userCommandExecutioners      | false -> InMemory.userCommandExecutioners
+        let cartCommandExecutioner      = isProduction |> function true -> FileStore.cartCommandExecutioner       | false -> InMemory.cartCommandExecutioner
+        let categoryCommandExecutioners = isProduction |> function true -> FileStore.categoryCommandExecutioners  | false -> InMemory.categoryCommandExecutioners
 
         // create actor refs
         let wineActorRef     = spawn system "wineActor" (wineActor wineCommandExecutioners)
