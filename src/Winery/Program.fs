@@ -22,6 +22,7 @@ open Services.Actors.Storage
 open Akka.FSharp.Spawn
 open Services.Actors.User
 open Http.Users
+open Microsoft.Extensions.Configuration
 
 // ---------------------------------
 // Configure authentication
@@ -44,12 +45,10 @@ let jwtOptions (options: JwtBearerOptions) =
         ValidAudience = "http://localhost:5000/",
         IssuerSigningKey = SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret)) )
 
-
 // ---------------------------------
 // Register app services
 // ---------------------------------
 type IServiceCollection with
-    member this.IsProduction = false
 
     member this.AddAuth() = 
         let authService: AuthService = 
@@ -59,9 +58,10 @@ type IServiceCollection with
             .AddJwtBearer(Action<JwtBearerOptions> jwtOptions)  |> ignore
         this.AddSingleton(authService)                          |> ignore
 
-    member this.AddWineryServices() =        
+    member this.AddWineryServices(env: IHostingEnvironment) =       
+    
         // check with configurations later
-        let isProduction = this.IsProduction
+        let isProduction = env.IsProduction()
 
         // get service depending on app environment
         let userQuery       = isProduction |> function | true -> FileStore.userQuery         | false -> DataStore.userQuery
@@ -69,18 +69,18 @@ type IServiceCollection with
         let wineQueries     = isProduction |> function | true -> FileStore.wineQueries       | false -> DataStore.wineQueries
         let categoryQueries = isProduction |> function | true -> FileStore.categoryQueries   | false -> DataStore.categoryQueries
         
-        this.AddMessageReceivers()          |> ignore
         this.AddSingleton(userQuery)        |> ignore
         this.AddSingleton(cartQuery)        |> ignore
+        this.AddMessageReceivers(env)       |> ignore
         this.AddSingleton(wineQueries)      |> ignore
         this.AddSingleton(categoryQueries)  |> ignore
         
-    member private this.AddMessageReceivers() =
+    member private this.AddMessageReceivers(env: IHostingEnvironment) =
         // create actor system
         let system = Akka.FSharp.System.create "winery-system" (Akka.FSharp.Configuration.defaultConfig())
         
         // check with configuration later
-        let isProduction = this.IsProduction
+        let isProduction = env.IsProduction()
 
         // get command services depending on app environment
         let wineCommandExecutioners     = isProduction |> function true -> FileStore.wineCommandExecutioners      | false -> DataStore.wineCommandExecutioners
@@ -144,17 +144,19 @@ let configureCors (builder : CorsPolicyBuilder) =
            |> ignore
 
 let configureApp (app : IApplicationBuilder) =
-    // let env = app.ApplicationServices.GetService<IHostingEnvironment>()
     do app.UseCors(configureCors)
           .UseAuthentication()
           .UseGiraffeErrorHandler(errorHandler)
           .UseGiraffe(webApp)
 
-let configureServices (services : IServiceCollection) =
-    services.AddCors()            |> ignore
-    services.AddAuth()            |> ignore
-    services.AddGiraffe()         |> ignore
-    services.AddWineryServices()  |> ignore
+let configureServices (services : IServiceCollection) = 
+    let sp = services.BuildServiceProvider()
+    let env = sp.GetService<IHostingEnvironment>()
+    
+    services.AddCors()              |> ignore
+    services.AddAuth()              |> ignore
+    services.AddGiraffe()           |> ignore
+    services.AddWineryServices(env) |> ignore
 
 let configureLogging (builder : ILoggingBuilder) =
     let filter (l : LogLevel) = l.Equals LogLevel.Error
