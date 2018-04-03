@@ -49,6 +49,8 @@ let jwtOptions (options: JwtBearerOptions) =
 // Register app services
 // ---------------------------------
 type IServiceCollection with
+    member this.IsProduction = false
+
     member this.AddAuth() = 
         let authService: AuthService = 
             { hashPassword = BCrypt.HashPassword; verify = BCrypt.Verify }
@@ -59,13 +61,13 @@ type IServiceCollection with
 
     member this.AddWineryServices() =        
         // check with configurations later
-        let isProduction = true
+        let isProduction = this.IsProduction
 
         // get service depending on app environment
-        let userQuery       = isProduction |> function | true -> FileStore.userQuery | false -> InMemory.userQuery
-        let cartQuery       = isProduction |> function | true -> FileStore.cartQuery | false -> InMemory.cartQuery
-        let wineQueries     = isProduction |> function | true -> FileStore.wineQueries | false -> InMemory.wineQueries
-        let categoryQueries = isProduction |> function | true -> FileStore.categoryQueries | false -> InMemory.categoryQueries
+        let userQuery       = isProduction |> function | true -> FileStore.userQuery         | false -> DataStore.userQuery
+        let cartQuery       = isProduction |> function | true -> FileStore.cartQuery         | false -> DataStore.cartQuery
+        let wineQueries     = isProduction |> function | true -> FileStore.wineQueries       | false -> DataStore.wineQueries
+        let categoryQueries = isProduction |> function | true -> FileStore.categoryQueries   | false -> DataStore.categoryQueries
         
         this.AddMessageReceivers()          |> ignore
         this.AddSingleton(userQuery)        |> ignore
@@ -78,13 +80,13 @@ type IServiceCollection with
         let system = Akka.FSharp.System.create "winery-system" (Akka.FSharp.Configuration.defaultConfig())
         
         // check with configuration later
-        let isProduction = true
+        let isProduction = this.IsProduction
 
         // get command services depending on app environment
-        let wineCommandExecutioners     = isProduction |> function true -> FileStore.wineCommandExecutioners      | false -> InMemory.wineCommandExecutioners
-        let userCommandExecutioners     = isProduction |> function true -> FileStore.userCommandExecutioners      | false -> InMemory.userCommandExecutioners
-        let cartCommandExecutioner      = isProduction |> function true -> FileStore.cartCommandExecutioner       | false -> InMemory.cartCommandExecutioner
-        let categoryCommandExecutioners = isProduction |> function true -> FileStore.categoryCommandExecutioners  | false -> InMemory.categoryCommandExecutioners
+        let wineCommandExecutioners     = isProduction |> function true -> FileStore.wineCommandExecutioners      | false -> DataStore.wineCommandExecutioners
+        let userCommandExecutioners     = isProduction |> function true -> FileStore.userCommandExecutioners      | false -> DataStore.userCommandExecutioners
+        let cartCommandExecutioner      = isProduction |> function true -> FileStore.cartCommandExecutioner       | false -> DataStore.cartCommandExecutioner
+        let categoryCommandExecutioners = isProduction |> function true -> FileStore.categoryCommandExecutioners  | false -> DataStore.categoryCommandExecutioners
 
         // create actor refs
         let wineActorRef     = spawn system "wineActor" (wineActor wineCommandExecutioners)

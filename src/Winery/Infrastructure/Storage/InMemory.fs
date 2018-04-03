@@ -224,7 +224,7 @@ let private updateWine =
     let update = fun (editWine: EditWine) (wine: Wine) ->
         // extremely ugly way
         if (editWine.name.IsSome) then wine.name <- editWine.name.Value
-        if (editWine.description.IsSome) then wine.name <- editWine.name.Value
+        if (editWine.description.IsSome) then wine.description <- editWine.description.Value
         if (editWine.price.IsSome) then wine.price <- editWine.price.Value
         if (editWine.year.IsSome) then wine.year <- editWine.year.Value
         if (editWine.categoryID.IsSome) then wine.categoryId <- editWine.categoryID.Value

@@ -1,0 +1,88 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Database Name="Winery" xmlns="http://schemas.microsoft.com/linqtosql/dbml/2007">
+  <Table Name="dbo.Cart" Member="Cart">
+    <Type Name="Cart">
+      <Column Name="ID" Type="System.Guid" DbType="UniqueIdentifier NOT NULL" IsPrimaryKey="true" CanBeNull="false" />
+      <Column Name="UserID" Type="System.Guid" DbType="UniqueIdentifier NOT NULL" CanBeNull="false" />
+      <Association Name="FK_Cart_User" Member="User" ThisKey="UserID" OtherKey="ID" Type="User" IsForeignKey="true" />
+      <Association Name="FK_CartItem_Cart" Member="CartItem" ThisKey="ID" OtherKey="CartID" Type="CartItem" DeleteRule="NO ACTION" />
+    </Type>
+  </Table>
+  <Table Name="dbo.CartItem" Member="CartItem">
+    <Type Name="CartItem">
+      <Column Name="ID" Type="System.Guid" DbType="UniqueIdentifier NOT NULL" IsPrimaryKey="true" CanBeNull="false" />
+      <Column Name="CartID" Type="System.Guid" DbType="UniqueIdentifier NOT NULL" CanBeNull="false" />
+      <Column Name="WineID" Type="System.Guid" DbType="UniqueIdentifier NOT NULL" CanBeNull="false" />
+      <Column Name="Quantity" Type="System.Int32" DbType="Int NOT NULL" CanBeNull="false" />
+      <Association Name="FK_CartItem_Cart" Member="Cart" ThisKey="CartID" OtherKey="ID" Type="Cart" IsForeignKey="true" />
+      <Association Name="FK_CartItem_Wine" Member="Wine" ThisKey="WineID" OtherKey="ID" Type="Wine" IsForeignKey="true" />
+    </Type>
+  </Table>
+  <Table Name="dbo.Category" Member="Category">
+    <Type Name="Category">
+      <Column Name="ID" Type="System.Guid" DbType="UniqueIdentifier NOT NULL" IsPrimaryKey="true" CanBeNull="false" />
+      <Column Name="Name" Type="System.String" DbType="NVarChar(255) NOT NULL" CanBeNull="false" />
+      <Column Name="Description" Type="System.String" DbType="NVarChar(255) NOT NULL" CanBeNull="false" />
+      <Association Name="FK_Wine_Category" Member="Wine" ThisKey="ID" OtherKey="CategoryID" Type="Wine" DeleteRule="NO ACTION" />
+    </Type>
+  </Table>
+  <Table Name="dbo.Order" Member="Order">
+    <Type Name="Order">
+      <Column Name="ID" Type="System.Guid" DbType="UniqueIdentifier NOT NULL" IsPrimaryKey="true" CanBeNull="false" />
+      <Column Name="CreatedDate" Type="System.DateTime" DbType="DateTime NOT NULL" CanBeNull="false" />
+      <Association Name="FK_OrderItem_Order" Member="OrderItem" ThisKey="ID" OtherKey="OrderID" Type="OrderItem" DeleteRule="NO ACTION" />
+    </Type>
+  </Table>
+  <Table Name="dbo.OrderItem" Member="OrderItem">
+    <Type Name="OrderItem">
+      <Column Name="ID" Type="System.Guid" DbType="UniqueIdentifier NOT NULL" IsPrimaryKey="true" CanBeNull="false" />
+      <Column Name="OrderID" Type="System.Guid" DbType="UniqueIdentifier NOT NULL" CanBeNull="false" />
+      <Column Name="WineID" Type="System.Guid" DbType="UniqueIdentifier NOT NULL" CanBeNull="false" />
+      <Column Name="Price" Type="System.Decimal" DbType="Decimal(19,5) NOT NULL" CanBeNull="false" />
+      <Column Name="Quantity" Type="System.Int32" DbType="Int NOT NULL" CanBeNull="false" />
+      <Association Name="FK_OrderItem_Order" Member="Order" ThisKey="OrderID" OtherKey="ID" Type="Order" IsForeignKey="true" />
+      <Association Name="FK_OrderItem_Wine" Member="Wine" ThisKey="WineID" OtherKey="ID" Type="Wine" IsForeignKey="true" />
+    </Type>
+  </Table>
+  <Table Name="dbo.User" Member="User">
+    <Type Name="User">
+      <Column Name="ID" Type="System.Guid" DbType="UniqueIdentifier NOT NULL" IsPrimaryKey="true" CanBeNull="false" />
+      <Column Name="Email" Type="System.String" DbType="NVarChar(255) NOT NULL" CanBeNull="false" />
+      <Column Name="FirstName" Type="System.String" DbType="NVarChar(255) NOT NULL" CanBeNull="false" />
+      <Column Name="LastName" Type="System.String" DbType="NVarChar(255) NOT NULL" CanBeNull="false" />
+      <Column Name="Password" Type="System.String" DbType="NVarChar(255) NOT NULL" CanBeNull="false" />
+      <Column Name="Role" Type="System.String" DbType="NVarChar(255) NOT NULL" CanBeNull="false" />
+      <Association Name="FK_Cart_User" Member="Cart" ThisKey="ID" OtherKey="UserID" Type="Cart" DeleteRule="NO ACTION" />
+    </Type>
+  </Table>
+  <Table Name="dbo.VersionInfo" Member="VersionInfo">
+    <Type Name="VersionInfo">
+      <Column Name="Version" Type="System.Int64" DbType="BigInt NOT NULL" CanBeNull="false" />
+      <Column Name="AppliedOn" Type="System.DateTime" DbType="DateTime" CanBeNull="true" />
+      <Column Name="Description" Type="System.String" DbType="NVarChar(1024)" CanBeNull="true" />
+    </Type>
+  </Table>
+  <Table Name="dbo.Wine" Member="Wine">
+    <Type Name="Wine">
+      <Column Name="ID" Type="System.Guid" DbType="UniqueIdentifier NOT NULL" IsPrimaryKey="true" CanBeNull="false" />
+      <Column Name="CategoryID" Type="System.Guid" DbType="UniqueIdentifier NOT NULL" CanBeNull="false" />
+      <Column Name="Name" Type="System.String" DbType="NVarChar(255) NOT NULL" CanBeNull="false" />
+      <Column Name="Description" Type="System.String" DbType="NVarChar(255) NOT NULL" CanBeNull="false" />
+      <Column Name="Year" Type="System.Int32" DbType="Int NOT NULL" CanBeNull="false" />
+      <Column Name="Price" Type="System.Decimal" DbType="Decimal(19,5) NOT NULL" CanBeNull="false" />
+      <Column Name="imagePath" Member="ImagePath" Type="System.String" DbType="NVarChar(255) NOT NULL" CanBeNull="false" />
+      <Association Name="FK_CartItem_Wine" Member="CartItem" ThisKey="ID" OtherKey="WineID" Type="CartItem" DeleteRule="NO ACTION" />
+      <Association Name="FK_OrderItem_Wine" Member="OrderItem" ThisKey="ID" OtherKey="WineID" Type="OrderItem" DeleteRule="NO ACTION" />
+      <Association Name="FK_Wine_Category" Member="Category" ThisKey="CategoryID" OtherKey="ID" Type="Category" IsForeignKey="true" />
+      <Association Name="FK_WineInventory_Wine" Member="WineInventory" ThisKey="ID" OtherKey="WineID" Type="WineInventory" DeleteRule="NO ACTION" />
+    </Type>
+  </Table>
+  <Table Name="dbo.WineInventory" Member="WineInventory">
+    <Type Name="WineInventory">
+      <Column Name="ID" Type="System.Guid" DbType="UniqueIdentifier NOT NULL" IsPrimaryKey="true" CanBeNull="false" />
+      <Column Name="WineID" Type="System.Guid" DbType="UniqueIdentifier NOT NULL" CanBeNull="false" />
+      <Column Name="Quantity" Type="System.Int32" DbType="Int NOT NULL" CanBeNull="false" />
+      <Association Name="FK_WineInventory_Wine" Member="Wine" ThisKey="WineID" OtherKey="ID" Type="Wine" IsForeignKey="true" />
+    </Type>
+  </Table>
+</Database>

@@ -12,9 +12,15 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Reference Include="System.Data.Linq" />
+  </ItemGroup>
+  
+  <ItemGroup>
     <PackageReference Include="Akka.Fsharp" Version="1.2.3" />
     <PackageReference Include="BCrypt.Net-Core" Version="1.4.0" />
     <PackageReference Include="FluentMigrator" Version="1.6.2" />
+    <PackageReference Include="FSharp.Data" Version="2.4.6" />
+    <PackageReference Include="FSharp.Data.TypeProviders" Version="5.0.0.2" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="2.0.1" />
     <PackageReference Include="Microsoft.AspNetCore.Cors" Version="2.0.*" />
     <PackageReference Include="Microsoft.AspNetCore.Hosting" Version="2.0.*" />
@@ -34,6 +40,7 @@
     <Compile Include="Infrastructure/Storage/InMemory.fs" />
     <Compile Include="Infrastructure/Storage/FileStore/FileStore.fs" />
     <Compile Include="Infrastructure/Storage/DataStore/Migrations/201803230723_InitialCreate.fs" />
+    <Compile Include="Infrastructure/Storage/DataStore/DataStore.fs" />
     <Compile Include="Infrastructure/Services/Models.fs" />
     <Compile Include="Infrastructure/Services/UserActors.fs" />
     <Compile Include="Infrastructure/Services/StorageActors.fs" />
@@ -49,6 +56,7 @@
 
   <ItemGroup>
     <Content Include="app.config" />
+    <None Include="app.config" CopyToOutputDirectory="PreserveNewest" />
     <None Include="web.config" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

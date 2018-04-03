@@ -107,13 +107,11 @@ let putWine (categoryStringId: string, idString: string): HttpHandler =
 let wineHttpHandlers: HttpHandler = 
     (choose [
         GET >=> choose [
-            routeCif "/categories/%O/wines(/*)" getWines
+            routeCif "/categories/%O/wines" getWines
             routeCif "/categories/%s/wines/search" getWineName
             routeCif "/categories/%s/wines/%s" getWine
         ]
-        subRouteCi "/categories" authorizeAdmin >=> choose [
-            POST    >=> routeCif "/%s/wines" (authorizeAdminWithArgs << postWine)
-            PUT     >=> routeCif "/%s/wines/%s" (authorizeAdminWithArgs << putWine)
-            DELETE  >=> routeCif "/%s/wines/%s" (authorizeAdminWithArgs << deleteWine)
-        ]
+        POST    >=> routeCif "/categories/%s/wines" (authorizeAdminWithArgs << postWine)
+        PUT     >=> routeCif "/categories/%s/wines/%s" (authorizeAdminWithArgs << putWine)
+        DELETE  >=> routeCif "/categories/%s/wines/%s" (authorizeAdminWithArgs << deleteWine)    
     ])
