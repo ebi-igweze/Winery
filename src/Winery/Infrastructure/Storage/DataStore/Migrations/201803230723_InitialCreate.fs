@@ -1,6 +1,5 @@
 namespace DataStore.Migrations
 
-open Winery
 open FluentMigrator
 open System
 open Storage.InMemory

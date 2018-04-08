@@ -55,7 +55,7 @@ let toCartItem (item: User.CartItem) = { CartItem.id=item.id; productId=item.pro
 let toDomainCartItem getWine (item: CartItem) = { User.CartItem.id=item.id; product=(getWine item.productId); quantity=item.quantity }
 let toDomainCart getWine (cart: Cart) = { User.Cart.userId=cart.userId; items=cart.items |> Seq.map (toDomainCartItem getWine) |> Seq.toArray }
 let userToExistingUser (user: User) = { ExistingUser.id = user.id; firstName = user.firstName; lastName = user.lastName; email = user.email; role = user.role |> function "admin" -> Administrator | _ -> Customer }
-let newUserToUser (id, user: NewUser, password) = { email = user.email; id = id; firstName = user.firstName; lastName = user.lastName; password = password; role = user.role |> function Administrator -> "admin" | _ -> "customer" }
+let newUserToUser (id, user: NewUser, password) = { email = user.email; id = id; firstName = user.firstName; lastName = user.lastName; password = password; role = string user.role }
 
 /////////////////////////
 ////  Storage Stubs

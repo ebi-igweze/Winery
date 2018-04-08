@@ -22,7 +22,6 @@ open Services.Actors.Storage
 open Akka.FSharp.Spawn
 open Services.Actors.User
 open Http.Users
-open Microsoft.Extensions.Configuration
 
 // ---------------------------------
 // Configure authentication

@@ -76,7 +76,7 @@ let newUserToUser (id, user: NewUser, password) =
           FirstName = user.firstName,
           LastName = user.lastName, 
           Password = password, 
-          Role = (user.role |> function Administrator -> "admin" | _ -> "customer") )
+          Role = string user.role  )
 
 
 /////////////////////////
