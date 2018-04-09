@@ -11,7 +11,6 @@ open System.Text
 open Http.Categories
 open Services.Models
 open Microsoft.Extensions.Logging
-open Microsoft.AspNetCore.Builder
 open Microsoft.AspNetCore.Hosting
 open Microsoft.IdentityModel.Tokens
 open Microsoft.AspNetCore.Authentication
@@ -22,6 +21,9 @@ open Services.Actors.Storage
 open Akka.FSharp.Spawn
 open Services.Actors.User
 open Http.Users
+open Microsoft.AspNetCore.Builder
+open System.Threading.Tasks
+open Microsoft.AspNetCore.Http
 
 // ---------------------------------
 // Configure authentication
@@ -143,10 +145,22 @@ let configureCors (builder : CorsPolicyBuilder) =
            |> ignore
 
 let configureApp (app : IApplicationBuilder) =
+
+    let serveIndexFile (ctx: HttpContext): Task = 
+        task {
+            if (ctx.Request.Path.Equals("/"))
+            then ctx.Response.Redirect("/app-build/index.html")
+            do Task.Yield() |> ignore
+        } :> _
+        
     do app.UseCors(configureCors)
+          .UseStaticFiles()
           .UseAuthentication()
           .UseGiraffeErrorHandler(errorHandler)
           .UseGiraffe(webApp)
+
+    do app.Run(RequestDelegate serveIndexFile)
+
 
 let configureServices (services : IServiceCollection) = 
     let sp = services.BuildServiceProvider()
