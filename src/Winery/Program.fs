@@ -22,8 +22,7 @@ open Akka.FSharp.Spawn
 open Services.Actors.User
 open Http.Users
 open Microsoft.AspNetCore.Builder
-open System.Threading.Tasks
-open Microsoft.AspNetCore.Http
+open System.IO
 
 // ---------------------------------
 // Configure authentication
@@ -34,9 +33,7 @@ let authOptions (options: AuthenticationOptions) =
     options.DefaultChallengeScheme <- JwtBearerDefaults.AuthenticationScheme
 
 let jwtOptions (options: JwtBearerOptions) =
-    // options.SaveToken <- true
-    // options.IncludeErrorDetails <- true
-    // options.Authority <- "https://ebi.igweze.com"
+    options.SaveToken <- true
     options.TokenValidationParameters <- TokenValidationParameters (
         ValidateActor = true,
         ValidateAudience = true,
@@ -124,6 +121,7 @@ let webApp =
                 authHttpHandlers
                 userHttpHandlers
             ])
+        route "/" >=> redirectTo true "/index.html"
         setStatusCode 404 >=> text "Not Found" ]
 
 // ---------------------------------
@@ -146,20 +144,12 @@ let configureCors (builder : CorsPolicyBuilder) =
 
 let configureApp (app : IApplicationBuilder) =
 
-    let serveIndexFile (ctx: HttpContext): Task = 
-        task {
-            if (ctx.Request.Path.Equals("/"))
-            then ctx.Response.Redirect("/app-build/index.html")
-            do Task.Yield() |> ignore
-        } :> _
-        
     do app.UseCors(configureCors)
           .UseStaticFiles()
           .UseAuthentication()
           .UseGiraffeErrorHandler(errorHandler)
           .UseGiraffe(webApp)
 
-    do app.Run(RequestDelegate serveIndexFile)
 
 
 let configureServices (services : IServiceCollection) = 
@@ -177,9 +167,14 @@ let configureLogging (builder : ILoggingBuilder) =
 
 [<EntryPoint>]
 let main _ =
+    let root = Directory.GetCurrentDirectory()
+    let webRoot = Path.Combine(root, "wwwroot/app-build")
+
     WebHostBuilder()
+        .UseContentRoot(root)
         .UseKestrel()
         .UseIISIntegration()
+        .UseWebRoot(webRoot)
         .Configure(Action<IApplicationBuilder> configureApp)
         .ConfigureServices(configureServices)
         .ConfigureLogging(configureLogging)
