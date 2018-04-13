@@ -101,10 +101,10 @@ let login: HttpHandler =
             let authService = ctx.GetService<AuthService>()
             let getUser = userQuery.getUser << Name << UserName
             return! match getUser model.userName with 
-                    | None -> unauthorizedM "UserName doesn't exist" next ctx
+                    | None -> badRequestM "UserName doesn't exist" next ctx
                     | Some (user, Password actualPassword) -> 
                         if (not (authService.verify (model.password, actualPassword))) 
-                        then unauthorizedM "Invalid username or password" next ctx 
+                        then badRequestM "Invalid username or password" next ctx 
                         else User user |> toUserInfo |> generateToken |> json <|| (next, ctx)
         }
 
@@ -129,11 +129,12 @@ let signUp: HttpHandler =
                     | Ok _ ->  NewUser user |> toUserInfo |> generateToken |> json <|| (next, ctx) 
         }
 
-let logout: HttpHandler = signOut JwtBearerDefaults.AuthenticationScheme
+let logout = noContent //signOut JwtBearerDefaults.AuthenticationScheme
 
 let authHttpHandlers: HttpHandler = 
-    (choose [
-        routeCi "/login" >=> login
-        routeCi "/signup" >=> signUp
-        routeCi "/signout" >=> authenticate >=> logout
-    ])
+    POST >=> subRouteCi "/auth" 
+        (choose [
+            routeCi "/login" >=> login
+            routeCi "/signup" >=> signUp
+            routeCi "/signout" >=> authenticate >=> logout
+        ])

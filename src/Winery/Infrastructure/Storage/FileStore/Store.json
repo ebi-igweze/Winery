@@ -71,6 +71,22 @@
       "firstName": "Admin",
       "role": "admin",
       "password": "$2b$10$0bduag.RSVwW8T8BLBsCQ.LrMPQ5xVyJnKUvcP9w6CqeN77ePQY36"
+    },
+    {
+      "id": "7d2d1821-dd75-4150-8a0c-78dc420bdfb1",
+      "email": "ebi.igweze@gmail.com",
+      "lastName": "igweze",
+      "firstName": "ebi",
+      "role": "customer",
+      "password": "$2b$10$XVNL85m.4aZbRILEzkWW9.RdkA3NCuDozv28H44BveMRsdm/hMDaS"
+    },
+    {
+      "id": "caf569eb-3d45-4c9b-a47e-df371f156684",
+      "email": "ori@gmail.com",
+      "lastName": "has",
+      "firstName": "ori",
+      "role": "customer",
+      "password": "$2b$10$qaOIxWvoTVc6lue.3n2h/OIw0Y82kvM7eYsU0uERF/LE6JFLJbAGq"
     }
   ]
 }

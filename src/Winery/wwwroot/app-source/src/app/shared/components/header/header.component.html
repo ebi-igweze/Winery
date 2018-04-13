@@ -8,36 +8,43 @@
         </button>
         <div class="collapse navbar-collapse" id="navbarResponsive">
             <ul class="navbar-nav ml-auto">
-                <li class="nav-item active">
-                    <a class="nav-link" href="#">Home
+                <li class="nav-item" routerLinkActive="active">
+                    <a class="nav-link" routerLink="/">Home
                         <span class="sr-only">(current)</span>
                     </a>
                 </li>
-                <li class="nav-item">
-                    <div class="dropdown">
-                        <a href="#0" class="nav-link dropdown-toggle" id="cart" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                            Cart
-                        </a>
-                        <div class="dropdown-menu p-0 app-cart" aria-labelledby="cart"></div>
-                    </div>
-                </li>
+                <ng-container *ngIf="user.status === 1">        
+                    <li class="nav-item">
+                        <a class="nav-link" href="#0" (click)="logout($event)">Logout</a>
+                    </li>
+                </ng-container>
+                <ng-container *ngIf="user.status === -1">
+                    <li class="nav-item">
+                        <div class="dropdown">
+                            <a href="#0" class="nav-link dropdown-toggle" id="cart" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                Cart
+                            </a>
+                            <div class="dropdown-menu p-0 app-cart" aria-labelledby="cart"></div>
+                        </div>
+                    </li>
 
-                <li class="nav-item">
-                    <div class="dropdown">
-                        <a href="#0" class="nav-link dropdown-toggle" id="dropdownMenu2" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                            Login
-                        </a>
-                        <div class="dropdown-menu dropdown-menu-right app-login" aria-labelledby="dropdownMenu2"></div>
-                    </div>
-                </li>
-                <li class="nav-item">
-                    <div class="dropdown">
-                        <a href="#0" class="nav-link dropdown-toggle" id="dropdownMenu1" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                            Sign Up
-                        </a>
-                        <div class="dropdown-menu dropdown-menu-right app-signup" aria-labelledby="dropdownMenu1"></div>
-                    </div>
-                </li>
+                    <li class="nav-item">
+                        <div class="dropdown">
+                            <a href="#0" class="nav-link dropdown-toggle" id="dropdownMenu2" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                Login
+                            </a>
+                            <div class="dropdown-menu dropdown-menu-right app-login" aria-labelledby="dropdownMenu2"></div>
+                        </div>
+                    </li>
+                    <li class="nav-item">
+                        <div class="dropdown">
+                            <a href="#0" class="nav-link dropdown-toggle" id="dropdownMenu1" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                Sign Up
+                            </a>
+                            <div class="dropdown-menu dropdown-menu-right app-signup" aria-labelledby="dropdownMenu1"></div>
+                        </div>
+                    </li>
+                </ng-container>
             </ul>
         </div>
     </div>

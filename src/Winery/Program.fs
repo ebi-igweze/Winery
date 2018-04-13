@@ -52,7 +52,7 @@ type IServiceCollection with
         let authService: AuthService = 
             { hashPassword = BCrypt.HashPassword; verify = BCrypt.Verify }
 
-        this.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+        this.AddAuthentication(authOptions)
             .AddJwtBearer(Action<JwtBearerOptions> jwtOptions)  |> ignore
         this.AddSingleton(authService)                          |> ignore
 
@@ -62,10 +62,10 @@ type IServiceCollection with
         let isProduction = env.IsProduction()
 
         // get service depending on app environment
-        let userQuery       = isProduction |> function | true -> FileStore.userQuery         | false -> DataStore.userQuery
-        let cartQuery       = isProduction |> function | true -> FileStore.cartQuery         | false -> DataStore.cartQuery
-        let wineQueries     = isProduction |> function | true -> FileStore.wineQueries       | false -> DataStore.wineQueries
-        let categoryQueries = isProduction |> function | true -> FileStore.categoryQueries   | false -> DataStore.categoryQueries
+        let userQuery       = isProduction |> function | true -> FileStore.userQuery         | false -> InMemory.userQuery
+        let cartQuery       = isProduction |> function | true -> FileStore.cartQuery         | false -> InMemory.cartQuery
+        let wineQueries     = isProduction |> function | true -> FileStore.wineQueries       | false -> InMemory.wineQueries
+        let categoryQueries = isProduction |> function | true -> FileStore.categoryQueries   | false -> InMemory.categoryQueries
         
         this.AddSingleton(userQuery)        |> ignore
         this.AddSingleton(cartQuery)        |> ignore
@@ -81,10 +81,10 @@ type IServiceCollection with
         let isProduction = env.IsProduction()
 
         // get command services depending on app environment
-        let wineCommandExecutioners     = isProduction |> function true -> FileStore.wineCommandExecutioners      | false -> DataStore.wineCommandExecutioners
-        let userCommandExecutioners     = isProduction |> function true -> FileStore.userCommandExecutioners      | false -> DataStore.userCommandExecutioners
-        let cartCommandExecutioner      = isProduction |> function true -> FileStore.cartCommandExecutioner       | false -> DataStore.cartCommandExecutioner
-        let categoryCommandExecutioners = isProduction |> function true -> FileStore.categoryCommandExecutioners  | false -> DataStore.categoryCommandExecutioners
+        let wineCommandExecutioners     = isProduction |> function true -> FileStore.wineCommandExecutioners      | false -> InMemory.wineCommandExecutioners
+        let userCommandExecutioners     = isProduction |> function true -> FileStore.userCommandExecutioners      | false -> InMemory.userCommandExecutioners
+        let cartCommandExecutioner      = isProduction |> function true -> FileStore.cartCommandExecutioner       | false -> InMemory.cartCommandExecutioner
+        let categoryCommandExecutioners = isProduction |> function true -> FileStore.categoryCommandExecutioners  | false -> InMemory.categoryCommandExecutioners
 
         // create actor refs
         let wineActorRef     = spawn system "wineActor" (wineActor wineCommandExecutioners)
@@ -137,7 +137,7 @@ let errorHandler (ex : Exception) (logger : ILogger) =
 // ---------------------------------
 
 let configureCors (builder : CorsPolicyBuilder) =
-    builder.WithOrigins("http://localhost:8080")
+    builder.WithOrigins([| "http://localhost:8080"; "http://localhost:4200" |])
            .AllowAnyMethod()
            .AllowAnyHeader()
            |> ignore
