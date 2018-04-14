@@ -29,8 +29,10 @@ open System.IO
 // ---------------------------------
 
 let authOptions (options: AuthenticationOptions) =
-    options.DefaultAuthenticateScheme <- JwtBearerDefaults.AuthenticationScheme
-    options.DefaultChallengeScheme <- JwtBearerDefaults.AuthenticationScheme
+    options.DefaultScheme               <- JwtBearerDefaults.AuthenticationScheme
+    options.DefaultSignOutScheme        <- JwtBearerDefaults.AuthenticationScheme
+    options.DefaultChallengeScheme      <- JwtBearerDefaults.AuthenticationScheme
+    options.DefaultAuthenticateScheme   <- JwtBearerDefaults.AuthenticationScheme
 
 let jwtOptions (options: JwtBearerOptions) =
     options.SaveToken <- true
@@ -143,14 +145,11 @@ let configureCors (builder : CorsPolicyBuilder) =
            |> ignore
 
 let configureApp (app : IApplicationBuilder) =
-
     do app.UseCors(configureCors)
           .UseStaticFiles()
           .UseAuthentication()
           .UseGiraffeErrorHandler(errorHandler)
           .UseGiraffe(webApp)
-
-
 
 let configureServices (services : IServiceCollection) = 
     let sp = services.BuildServiceProvider()

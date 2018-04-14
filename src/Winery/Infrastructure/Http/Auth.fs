@@ -129,12 +129,9 @@ let signUp: HttpHandler =
                     | Ok _ ->  NewUser user |> toUserInfo |> generateToken |> json <|| (next, ctx) 
         }
 
-let logout = noContent //signOut JwtBearerDefaults.AuthenticationScheme
-
 let authHttpHandlers: HttpHandler = 
     POST >=> subRouteCi "/auth" 
         (choose [
             routeCi "/login" >=> login
             routeCi "/signup" >=> signUp
-            routeCi "/signout" >=> authenticate >=> logout
         ])

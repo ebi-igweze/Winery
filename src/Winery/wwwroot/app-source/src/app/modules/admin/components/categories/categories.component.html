@@ -6,18 +6,18 @@
             <thead>
                 <tr>
                     <th scope="col">#</th>
-                    <th scope="col">First</th>
-                    <th scope="col">Last</th>
-                    <th scope="col">Handle</th>
+                    <th scope="col">Name</th>
+                    <th scope="col">Description</th>
+                    <th scope="col">Wines</th>
                     <th scope="col">Actions</th>
                 </tr>
             </thead>
             <tbody>
-                <tr>
+                <tr *ngFor="let category of categories">
                     <th scope="row">1</th>
-                    <td>Mark</td>
-                    <td>Otto</td>
-                    <td>@mdo</td>
+                    <td [innerText]="category.name"></td>
+                    <td [innerText]="category.description"></td>
+                    <td [innerText]="category.wines.length"></td>
                     <td>
                         <a href="#0" data-toggle="modal" data-target="#exampleModal">Edit</a> |
                         <a href="#0">Delete</a>

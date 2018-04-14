@@ -17,6 +17,11 @@
                     <li class="nav-item">
                         <a class="nav-link" href="#0" (click)="logout($event)">Logout</a>
                     </li>
+                </ng-container>        
+                <ng-container *ngIf="user.status === 1 && user.isAdmin">        
+                    <li class="nav-item">
+                        <a class="nav-link" routerLink="/admin">Admin</a>
+                    </li>
                 </ng-container>
                 <ng-container *ngIf="user.status === -1">
                     <li class="nav-item">

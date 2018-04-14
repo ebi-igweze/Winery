@@ -5,19 +5,21 @@ import { api, keys } from '../../app.config';
 import { Subject } from 'rxjs/Subject';
 import { Observable } from 'rxjs/Observable';
 import 'rxjs/add/operator/do';
+import { JwtHelperService } from '@auth0/angular-jwt';
+import { Router } from '@angular/router';
 
 @Injectable()
 export class AuthService {
     public onlogin = new Subject<Userstatus>();
     public onlogout = new Subject<Userstatus>();
 
-    constructor(private http: HttpClient) { }
+    constructor(private http: HttpClient, private jwt: JwtHelperService, private router: Router) { }
 
     public isAuthenticated(): boolean {
         let token = localStorage.getItem(keys.token) || null;
 
         // check whether token exist and if expired
-        return  token !== null // && !this.jwtHelper.isTokenExpired(token);
+        return  token !== null  && !this.jwt.isTokenExpired(token);
     }
 
     public login(info: LoginModel) : Promise<AuthResponse> {
@@ -33,7 +35,7 @@ export class AuthService {
     }
 
     public logOut(): Promise<{}> {
-        let promise = this.http.post(api.logout, {}).toPromise();
+        let promise = Promise.resolve({}); //this.http.post(api.logout, {}).toPromise();
         promise.then(this.removeToken)
                .catch(this.handleError);
         return promise;
@@ -44,13 +46,17 @@ export class AuthService {
     }
 
     private storeToken = (res: AuthResponse) => {
+        let role = this.jwt.decodeToken(res.token)[keys.role];
         localStorage.setItem(keys.token, res.token);
+        localStorage.setItem(keys.role, role);
         this.onlogin.next(Userstatus.loggedIn);
     }
 
     private removeToken = () => {
         localStorage.removeItem(keys.token);
+        localStorage.removeItem(keys.role);
         this.onlogout.next(Userstatus.loggedOut);
+        return this.router.navigate(['/'])
     }
 }
 
@@ -58,14 +64,8 @@ export class AuthService {
 export class TokenInterceptor implements HttpInterceptor {
 
     public intercept(req: HttpRequest<any>, next: HttpHandler): Observable<any> {
-        let headers = {
-            // 'Content-type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem(keys.token)}`
-        }
-        console.log(`Setting header for: ${req.url}`)
-        
-        let clone = req.clone({setHeaders: headers})
-        let observable = next.handle(clone);
+        // get observable response
+        let observable = next.handle(req);
 
         // catch all exceptions
         observable.do(res => console.log("Success: ", res), err => console.log("Error: ", err));
