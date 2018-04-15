@@ -16,13 +16,15 @@ import { AppRoutesModule } from './app.routes';
 import { CartComponent } from './shared/components/cart/cart.component';
 import { keys } from './app.config';
 import { CategoryService } from './shared/services/category.service';
+import { PopupDirective } from './shared/directives/popup.directive';
+import { PopupComponent } from './shared/components/popup/popup.component';
 
 const $TokenInterceptor = { provide: HTTP_INTERCEPTORS, useClass: TokenInterceptor, multi: true };
 
 @NgModule({
     declarations: [
         AppComponent, CartComponent, LoginComponent, LogoutComponent,
-        SignupComponent, HeaderComponent, NotFoundComponent
+        SignupComponent, HeaderComponent, NotFoundComponent, PopupDirective, PopupComponent
     ],
     imports: [
         BrowserModule,
