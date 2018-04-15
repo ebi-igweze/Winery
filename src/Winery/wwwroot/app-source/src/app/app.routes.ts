@@ -2,6 +2,7 @@ import { NgModule } from '@angular/core';
 import { Routes, RouterModule } from '@angular/router';
 import { NotFoundComponent } from './shared/components/not-found/not-found.component';
 import { LogoutComponent } from './shared/components/login/login.component';
+import { SharedModule } from './shared/shared.module';
 
 
 const routes: Routes = [
@@ -12,7 +13,7 @@ const routes: Routes = [
 ];
 
 @NgModule({
-  imports: [RouterModule.forRoot(routes, { useHash: true})],
-  exports: [RouterModule]
+  imports: [RouterModule.forRoot(routes, { useHash: true}), SharedModule],
+  exports: [RouterModule, SharedModule]
 })
 export class AppRoutesModule { }

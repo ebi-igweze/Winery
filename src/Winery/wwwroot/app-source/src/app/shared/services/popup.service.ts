@@ -18,7 +18,7 @@ export type Popup = {
 
 @Injectable()
 export class PopupService {
-    private popups: Popup[];
+    private popups: Popup[] = [];
     private currentState: PopupState;
     public oncomponentloaded: Subject<{state: PopupState, vc: ViewContainerRef}> = new Subject();
 
@@ -65,7 +65,7 @@ export class PopupService {
         let promiseHandler = (resolve, reject) => {
             let popup = this.popups.filter(ps => ps.name === name)[0];
             if (!popup) reject(`Popup State with name ${name} does not exist.`);
-            else this.loadComponent(popup.state, popup.vc, params, resolve);
+            else this.loadComponent(popup.state, params, popup.vc, resolve);
         }
         
         return new Promise<void>(promiseHandler);

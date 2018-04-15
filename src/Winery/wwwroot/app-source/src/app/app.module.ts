@@ -1,6 +1,5 @@
 import { BrowserModule } from '@angular/platform-browser';
 import { NgModule } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms'
 import { HttpClientModule, HTTP_INTERCEPTORS} from '@angular/common/http'
 
@@ -18,27 +17,26 @@ import { keys } from './app.config';
 import { CategoryService } from './shared/services/category.service';
 import { PopupDirective } from './shared/directives/popup.directive';
 import { PopupComponent } from './shared/components/popup/popup.component';
+import { PsLinkDirective } from './shared/directives/ps-link.directive';
+import { PopupService } from './shared/services/popup.service';
+import { WineService } from './shared/services/wine.service';
 
 const $TokenInterceptor = { provide: HTTP_INTERCEPTORS, useClass: TokenInterceptor, multi: true };
 
 @NgModule({
     declarations: [
         AppComponent, CartComponent, LoginComponent, LogoutComponent,
-        SignupComponent, HeaderComponent, NotFoundComponent, PopupDirective, PopupComponent
+        SignupComponent, HeaderComponent, NotFoundComponent,
     ],
     imports: [
-        BrowserModule,
-        FormsModule,
-        CommonModule,
-        HttpClientModule,
-        AppRoutesModule,
+        BrowserModule, FormsModule, HttpClientModule, AppRoutesModule,
         JwtModule.forRoot({
             config: {
                 tokenGetter: () => localStorage.getItem(keys.token)
             }
-        })
+        }),
     ],
-    providers: [ AuthService, UserService, $TokenInterceptor, CategoryService ],
+    providers: [ AuthService, UserService, $TokenInterceptor, WineService, CategoryService, PopupService ],
     bootstrap: [ AppComponent ]
 })
 export class AppModule { }

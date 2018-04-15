@@ -1,0 +1,29 @@
+<form class="modal-dialog" #form="ngForm">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h5 class="modal-title">Category</h5>
+            <button type="button" class="close" (click)="hidePopup();">
+                <span aria-hidden="true">&times;</span>
+            </button>
+        </div>
+        <div class="modal-body">
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="form-group">
+                        <label for="itemName">Name</label>
+                        <input type="text" class="form-control" name="name" [(ngModel)]="categoryForm.name" id="itemName" placeholder="Enter Name" required />
+                    </div>
+
+                    <div class="form-group">
+                        <label for="itemDescription">Description</label>
+                        <textarea class="form-control" name="description" [(ngModel)]="categoryForm.description" id="itemDescription" placeholder="Enter Description" required></textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-primary" [disabled]="form.invalid || !categoryForm.isValid()" (click)="saveChanges()">Save changes</button>
+            <button type="button" class="btn btn-secondary" (click)="hidePopup();">Close</button>
+        </div>
+    </div>
+</form>

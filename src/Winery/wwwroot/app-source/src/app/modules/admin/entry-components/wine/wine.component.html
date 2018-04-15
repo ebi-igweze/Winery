@@ -1,0 +1,78 @@
+<form class="modal-dialog" role="document">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h5 class="modal-title">Wine</h5>
+            <button type="button" class="close" (click)="hidePopup()">
+                <span aria-hidden="true">&times;</span>
+            </button>
+        </div>
+        <div class="modal-body">
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="itemName">Name</label>
+                                <input type="text" name="name" [(ngModel)]="wineForm.name" class="form-control" id="itemName" placeholder="Enter Name" />
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="year">Year Produced</label>
+                                <input type="number" name="name" [(ngModel)]="wineForm.name" class="form-control" id="year" min="1920" max="2018" placeholder="Year produced" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="itemDescription">Description</label>
+                        <textarea class="form-control" name="description" [(ngModel)]="wineForm.description" id="itemDescription" placeholder="Enter Description"></textarea>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="price">Price</label>
+                                <input type="number"  name="price" [(ngModel)]="wineForm.price" class="form-control" id="price" min="1920" max="2018" placeholder="Price of Wine" />
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="categorySelect">Select category</label>
+                                <select class="form-control" id="categorySelect" name="category" [(ngModel)]="category">
+                                    <option value="">Select a Category</option>
+                                    <option *ngFor="let c of categories" [value]="c.id" [innerText]="c.name"></option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="formControlFile1">Upload Image</label>
+                                <input type="file" class="form-control-file" id="formControlFile1">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="imageSelect">Image select</label>
+                                <select class="form-control" id="imageSelect"  name="imagePath" [(ngModel)]="wineForm.imagePath">
+                                    <option value="img/red-wine.png">Red Wine</option>
+                                    <option value="img/rose-wine.png">Rose Wine</option>
+                                    <option value="img/white-wine.png">White Wine</option>
+                                    <option value="img/sparkling-wine.png">Sparkling Wine</option>
+                                    <option value="img/pink-rose-wine.png">Pink-Rose Wine</option>
+                                    <option value="img/distilled-wine.png">Distilled Wine</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-primary">Save changes</button>
+            <button type="button" class="btn btn-secondary" (click)="hidePopup()">Close</button>
+        </div>
+    </div>
+</form>

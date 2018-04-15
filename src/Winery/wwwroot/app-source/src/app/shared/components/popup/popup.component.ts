@@ -5,7 +5,7 @@ import { Subscription } from 'rxjs/Subscription';
 
 @Component({
     selector: '.app-popup',
-    template: `<ng-template app-popup></ng-template>`,
+    template: `<ng-template app-popup></ng-template>`, // app-popup is for directive
     styles: []
 })
 export class PopupComponent implements OnInit {

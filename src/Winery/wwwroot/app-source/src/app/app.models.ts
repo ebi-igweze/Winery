@@ -16,6 +16,8 @@ export type AuthResponse = {
 
 export enum Userstatus { loggedOut = -1, loggedIn = 1 }
 
+export type Command = { href: string }
+
 export type Category = {
     id: string,
     name: string,
