@@ -18,6 +18,10 @@ export class WineService {
 
     constructor(private http: HttpClient) { }
 
+    public getAllWines(): Promise<Wine[]> {
+        return this.http.get<Wine[]>(api.allwines).toPromise();
+    }
+
     public getWines(categoryId: string): Promise<Wine[]> {
         if (this.categoryId === categoryId && this.wines) return Promise.resolve(this.wines);
         else  {

@@ -7,9 +7,9 @@ import { Routes, RouterModule } from '@angular/router';
 import { HomeComponent } from './home.component';
 
 const childRoutes: Routes = [
-    { path: 'wines/:id/details', component: WineDetailsComponent },
-    { path: 'wines', component: WineComponent },
-    { path: '', redirectTo: 'wines', pathMatch: 'full' },
+    { path: 'categories/:categoryId/wines/:wineId/details', component: WineDetailsComponent },
+    { path: 'categories/:categoryId/wines', component: WineComponent },
+    { path: '', redirectTo: 'categories/all/wines', pathMatch: 'full' },
 ]
 
 const routes: Routes = [

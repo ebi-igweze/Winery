@@ -3,6 +3,7 @@ export const api = {
     login: `${domain}/api/auth/login`,
     signUp: `${domain}/api/auth/signup`,
     categories: `${domain}/api/categories`,
+    allwines: `${domain}/api/categories/wines/all`,
     wines: (id) => `${domain}/api/categories/${id}/wines`
 }
 

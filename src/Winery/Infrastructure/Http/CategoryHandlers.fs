@@ -24,6 +24,19 @@ let getCategory id =
                     | None -> notFound next ctx
         }
 
+let getCategoryWithName =
+  fun (next: HttpFunc) (ctx: HttpContext) ->
+        task {
+            let nameOption = ctx.TryGetQueryStringValue("name")
+            return! match nameOption with 
+                    | None -> notFound next ctx
+                    | Some name ->
+                        let queries = ctx.GetService<CategoryQueries>()
+                        match queries.getCategoryByName (CategoryName name) with
+                        | Some c -> json c next ctx
+                        | None -> notFound next ctx
+        }
+
 let deleteCategory id = 
     fun (next: HttpFunc) (ctx: HttpContext) ->
         task {
@@ -63,7 +76,8 @@ let categoryHttpHandlers: HttpHandler =
         (choose [
             GET >=> choose [
                 routeCi "/categories" >=> getCategories
-                routeCif "/categories/%O"  getCategory
+                routeCi "/categories/search" >=> getCategoryWithName
+                routeCif "/categories/%O" getCategory
             ]
             PUT     >=> routeCif "/categories/%O" (authorizeAdminWithArgs << putCategory)
             POST    >=> routeCi "/categories" >=> authorizeAdmin >=> postCategory

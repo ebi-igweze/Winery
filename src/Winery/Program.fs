@@ -61,7 +61,7 @@ type IServiceCollection with
     member this.AddWineryServices(env: IHostingEnvironment) =       
     
         // check with configurations later
-        let isProduction = env.IsProduction()
+        let isProduction = false // env.IsProduction()
 
         // get service depending on app environment
         let userQuery       = isProduction |> function | true -> FileStore.userQuery         | false -> InMemory.userQuery
@@ -80,7 +80,7 @@ type IServiceCollection with
         let system = Akka.FSharp.System.create "winery-system" (Akka.FSharp.Configuration.defaultConfig())
         
         // check with configuration later
-        let isProduction = env.IsProduction()
+        let isProduction = false // env.IsProduction()
 
         // get command services depending on app environment
         let wineCommandExecutioners     = isProduction |> function true -> FileStore.wineCommandExecutioners      | false -> InMemory.wineCommandExecutioners

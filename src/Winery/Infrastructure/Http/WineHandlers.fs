@@ -10,6 +10,14 @@ open Microsoft.AspNetCore.Http
 
 type RouteFormat<'a> = Printf.TextWriterFormat<'a> 
 
+let getAllWines: HttpHandler = 
+    fun (next: HttpFunc) (ctx: HttpContext) ->
+        task {
+            let queries = ctx.GetService<WineQueries>()
+            let response = queries.getWines ()
+            return! json response next ctx
+        }
+
 let getWines categoryId: HttpHandler = 
     fun (next: HttpFunc) (ctx: HttpContext) ->
         task {
@@ -107,6 +115,7 @@ let putWine (categoryStringId: string, idString: string): HttpHandler =
 let wineHttpHandlers: HttpHandler = 
     (choose [
         GET >=> choose [
+            routeCi  "/categories/wines/all" >=> getAllWines
             routeCif "/categories/%O/wines" getWines
             routeCif "/categories/%s/wines/search" getWineName
             routeCif "/categories/%s/wines/%s" getWine

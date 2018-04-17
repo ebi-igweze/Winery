@@ -20,6 +20,8 @@ import { PopupComponent } from './shared/components/popup/popup.component';
 import { PsLinkDirective } from './shared/directives/ps-link.directive';
 import { PopupService } from './shared/services/popup.service';
 import { WineService } from './shared/services/wine.service';
+import { ProcessorService } from './shared/services/processor.service';
+import { RouteparamsService } from './shared/services/routeparams.service';
 
 const $TokenInterceptor = { provide: HTTP_INTERCEPTORS, useClass: TokenInterceptor, multi: true };
 
@@ -36,7 +38,7 @@ const $TokenInterceptor = { provide: HTTP_INTERCEPTORS, useClass: TokenIntercept
             }
         }),
     ],
-    providers: [ AuthService, UserService, $TokenInterceptor, WineService, CategoryService, PopupService ],
+    providers: [ AuthService, UserService, $TokenInterceptor, WineService, CategoryService, PopupService, ProcessorService, RouteparamsService ],
     bootstrap: [ AppComponent ]
 })
 export class AppModule { }

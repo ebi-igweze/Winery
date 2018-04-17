@@ -4,9 +4,10 @@
     
             <h1 class="my-4">Winery</h1>
             <div class="list-group">
-                <a href="#" class="list-group-item active">Category 1</a>
-                <a href="#" class="list-group-item">Category 2</a>
-                <a href="#" class="list-group-item">Category 3</a>
+                <a href="#" class="list-group-item" 
+                    [class.active]="!current.id" (click)="goto($event, 'all')">All Categories</a>
+                <a *ngFor="let category of cs.categories" href="#" class="list-group-item" 
+                [class.active]="current.id === category.id" [innerText]="category.name" (click)="goto($event, category.id)"></a> 
             </div>
     
         </div>

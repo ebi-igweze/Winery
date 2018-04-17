@@ -1,5 +1,10 @@
 <h1 class="text-center">
-    Wines</h1>
+    <span>Wines</span>
+        <select class="form-control d-inline" style="width: auto" id="categorySelect" name="category" [(ngModel)]="category">
+            <option value="">Select a Category</option>
+            <option *ngFor="let c of categories" [value]="c.id" [innerText]="c.name"></option>
+        </select>
+</h1>
 <div class="row">
     <div class="col-lg-12">
         <table class="table">
@@ -8,6 +13,7 @@
                     <th scope="col">#</th>
                     <th scope="col">Name</th>
                     <th scope="col">Price</th>
+                    <th scope="col">Year</th>
                     <th scope="col">Quantity</th>
                     <th scope="col">Actions</th>
                 </tr>
@@ -17,6 +23,7 @@
                     <th scope="row" [innerText]="i + 1"></th>
                     <td [innerText]="wine.name"></td>
                     <td [innerText]="wine.price| currency"></td>
+                    <td [innerText]="wine.year"></td>
                     <td [innerText]="wine.price"></td>
                     <td>
                         <a href="#0" psLink="wine" [params]="{ 'type': 'edit', 'category': wine.categoryID, 'wine': wine }">Edit</a> |
@@ -27,6 +34,7 @@
                     <th scope="row">3</th>
                     <td>Larry</td>
                     <td>the Bird</td>
+                    <td>the Bird</td>
                     <td>@twitter</td>
                     <td>
                         <a href="#0" data-toggle="modal" data-target="#exampleModal">Edit</a> |
@@ -36,6 +44,7 @@
                 <tr>
                     <th scope="row">4</th>
                     <td>Larry</td>
+                    <td>the Bird</td>
                     <td>the Bird</td>
                     <td>@twitter</td>
                     <td>

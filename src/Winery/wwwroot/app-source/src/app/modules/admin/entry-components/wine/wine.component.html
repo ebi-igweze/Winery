@@ -1,4 +1,4 @@
-<form class="modal-dialog" role="document">
+<form class="modal-dialog" #form="ngForm">
     <div class="modal-content">
         <div class="modal-header">
             <h5 class="modal-title">Wine</h5>
@@ -19,7 +19,7 @@
                         <div class="col-md-6">
                             <div class="form-group">
                                 <label for="year">Year Produced</label>
-                                <input type="number" name="name" [(ngModel)]="wineForm.name" class="form-control" id="year" min="1920" max="2018" placeholder="Year produced" />
+                                <input type="number" name="year" [(ngModel)]="wineForm.year" class="form-control" id="year" min="1920" max="2018" placeholder="Year produced" />
                             </div>
                         </div>
                     </div>
@@ -71,7 +71,7 @@
             </div>
         </div>
         <div class="modal-footer">
-            <button type="button" class="btn btn-primary">Save changes</button>
+            <button type="button" class="btn btn-primary" [disabled]="form.invalid || !wineForm.isValid()" (click)="saveChanges()">Save changes</button>
             <button type="button" class="btn btn-secondary" (click)="hidePopup()">Close</button>
         </div>
     </div>

@@ -1,16 +1,16 @@
 <div class="row">
 
-    <div class="col-lg-4 col-md-6 mb-4">
+    <div class="col-lg-4 col-md-6 mb-4" *ngFor="let wine of wines">
         <div class="card h-100">
-            <a href="#" routerLink="/wines/12/details" class="shop-item">
-                <img class="card-img-top" src="assets/img/rose-wine.png" alt="">
+            <a href="#" [routerLink]="['/categories', wine.categoryID, 'wines', wine.id, 'details']" class="shop-item">
+                <img class="card-img-top" src="assets/img/rose-wine.png" alt="wine image">
             </a>
             <div class="card-body">
                 <h4 class="card-title">
-                    <a href="#0" routerLink="/wines/12/details">Item One</a>
+                    <a href="#0" [routerLink]="['/categories', wine.categoryID, 'wines', wine.id, 'details']" [innerText]="wine.name"></a>
                 </h4>
-                <h5>$24.99</h5>
-                <p class="card-text">Lorem ipsum dolor sit amet, consectetur adipisicing elit. Amet numquam aspernatur!</p>
+                <h5 [innerText]="wine.price | currency"></h5>
+                <p class="card-text" [innerText]="wine.description"></p>
             </div>
             <div class="card-footer">
                 <small class="text-muted">&#9733; &#9733; &#9733; &#9733; &#9734;</small>

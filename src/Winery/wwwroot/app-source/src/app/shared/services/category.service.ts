@@ -27,10 +27,16 @@ export class CategoryService {
     }
 
     public addCategory(info: CategoryInfo): Promise<Command> {
-        return Promise.resolve({href: ''});
+        let promise = this.http.post<Command>(api.categories, info).toPromise();
+        
+        return promise;
     }
 
     public editCategory(id: string, info: CategoryInfo): Promise<Command> {
-        return Promise.resolve({ href: '' });
+        return this.http.put<Command>(api.categories+'/'+id, info).toPromise();
+    }
+
+    public deleteCategory(id: string): Promise<Command> {
+        return this.http.delete<Command>(api.categories+'/'+id).toPromise();
     }
 }

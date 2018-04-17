@@ -37,3 +37,18 @@ export class Wine {
 export class WineInventory extends Wine {
     quantity: number
 }
+
+// declare global {
+//     interface Object {
+//         update: (item: Object) => void;
+//     } 
+// }
+
+// Object.prototype.update = function (item: Object) {
+//     if (item) {
+//         for (let key in item) {
+//             if (item.hasOwnProperty(key))
+//                 this[key] = item[key];
+//         }
+//     }
+// }
