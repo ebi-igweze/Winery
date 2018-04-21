@@ -27,6 +27,7 @@
     <PackageReference Include="Microsoft.AspNetCore.Diagnostics" Version="2.0.*" />
     <PackageReference Include="Microsoft.AspNetCore.Server.Kestrel" Version="2.0.*" />
     <PackageReference Include="Microsoft.AspNetCore.Server.IISIntegration" Version="2.0.*" />
+    <PackageReference Include="Microsoft.AspNetCore.SignalR" Version="1.0.0-preview2-final" />
     <PackageReference Include="Microsoft.AspNetCore.StaticFiles" Version="2.0.2" />
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="2.0.*" />
     <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="2.0.*" />
@@ -34,17 +35,27 @@
     <PackageReference Include="Giraffe" Version="1.0.*" />
   </ItemGroup>
 
+  <!-- Domain -->
   <ItemGroup>
     <Compile Include="Domain/Winery.fs" />
     <Compile Include="Domain/User.fs" />
+  </ItemGroup>
+
+  <!-- Services -->
+  <ItemGroup>
     <Compile Include="Infrastructure/Storage/Models.fs" />
     <Compile Include="Infrastructure/Storage/InMemory.fs" />
     <Compile Include="Infrastructure/Storage/FileStore/FileStore.fs" />
     <Compile Include="Infrastructure/Storage/DataStore/Migrations/201803230723_InitialCreate.fs" />
     <Compile Include="Infrastructure/Storage/DataStore/DataStore.fs" />
     <Compile Include="Infrastructure/Services/Models.fs" />
+    <Compile Include="Infrastructure/Services/Hub.fs" />
     <Compile Include="Infrastructure/Services/UserActors.fs" />
     <Compile Include="Infrastructure/Services/StorageActors.fs" />
+  </ItemGroup>
+  
+  <!-- HttpHandlers -->
+  <ItemGroup>
     <Compile Include="Infrastructure/Http/Helpers.fs" />
     <Compile Include="Infrastructure/Http/Auth.fs" />
     <Compile Include="Infrastructure/Http/UserHandlers.fs" />
@@ -52,9 +63,9 @@
     <Compile Include="Infrastructure/Http/WineHandlers.fs" />
     <Compile Include="Infrastructure/Http/CartHandlers.fs" />
     <Compile Include="Program.fs" />
-
   </ItemGroup>
 
+  <!-- Content -->
   <ItemGroup>
     <Folder Include="wwwroot\" />
     <Content Include="app.config" />

@@ -5,11 +5,19 @@ open Giraffe
 open Http.Auth
 open Storage
 open Http.Cart
+open System.IO
 open Http.Wines
+open Http.Users
 open BCrypt.Net
 open System.Text
 open Http.Categories
 open Services.Models
+open Akka.FSharp.Spawn
+open Services.Actors.User
+open Winery.Services.Hubs
+open Services.Actors.Storage
+open Microsoft.AspNetCore.Builder
+open Microsoft.AspNetCore.SignalR
 open Microsoft.Extensions.Logging
 open Microsoft.AspNetCore.Hosting
 open Microsoft.IdentityModel.Tokens
@@ -17,12 +25,7 @@ open Microsoft.AspNetCore.Authentication
 open Microsoft.Extensions.DependencyInjection
 open Microsoft.AspNetCore.Cors.Infrastructure
 open Microsoft.AspNetCore.Authentication.JwtBearer
-open Services.Actors.Storage
-open Akka.FSharp.Spawn
-open Services.Actors.User
-open Http.Users
-open Microsoft.AspNetCore.Builder
-open System.IO
+
 
 // ---------------------------------
 // Configure authentication
@@ -45,6 +48,7 @@ let jwtOptions (options: JwtBearerOptions) =
         ValidAudience = "http://localhost:5000/",
         IssuerSigningKey = SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret)) )
 
+
 // ---------------------------------
 // Register app services
 // ---------------------------------
@@ -58,10 +62,13 @@ type IServiceCollection with
             .AddJwtBearer(Action<JwtBearerOptions> jwtOptions)  |> ignore
         this.AddSingleton(authService)                          |> ignore
 
-    member this.AddWineryServices(env: IHostingEnvironment) =       
+    member this.AddWineryServices() = 
+        sp <- this.BuildServiceProvider()
+        let env = sp.GetService<IHostingEnvironment>()
     
-        // check with configurations later
-        let isProduction = false // env.IsProduction()
+        // check hosting environment
+        let isProduction = env.IsProduction()
+        printfn "isProduction: %b" isProduction
 
         // get service depending on app environment
         let userQuery       = isProduction |> function | true -> FileStore.userQuery         | false -> InMemory.userQuery
@@ -79,8 +86,8 @@ type IServiceCollection with
         // create actor system
         let system = Akka.FSharp.System.create "winery-system" (Akka.FSharp.Configuration.defaultConfig())
         
-        // check with configuration later
-        let isProduction = false // env.IsProduction()
+        // check hosting environment
+        let isProduction = env.IsProduction()
 
         // get command services depending on app environment
         let wineCommandExecutioners     = isProduction |> function true -> FileStore.wineCommandExecutioners      | false -> InMemory.wineCommandExecutioners
@@ -92,22 +99,26 @@ type IServiceCollection with
         let wineActorRef     = spawn system "wineActor" (wineActor wineCommandExecutioners)
         let userActorRef     = spawn system "userActor" (userActor userCommandExecutioners)
         let cartActorRef     = spawn system "cartActor" (cartActor cartCommandExecutioner)
-        let commandActorRef  = spawn system "commandActor" commandActor
         let categoryActorRef = spawn system "categoryActor" (categoryActor categoryCommandExecutioners)
+        let commandActorRef  = spawn system "commandActor" (commandActor userActorRef wineActorRef cartActorRef categoryActorRef)
 
         // actor message receivers
-        let cartReceiver       =  getCartReceiver cartActorRef
-        let commandAgent       =  getCommandAgent commandActorRef
-        let userReceivers      =  getUserReceivers userActorRef
-        let wineReceivers      =  getWineReceivers wineActorRef
-        let categoryReceivers  =  getCategoryReceivers categoryActorRef
+        let cartReceiver       =  getCartReceiver commandActorRef
+        let userReceivers      =  getUserReceivers commandActorRef
+        let wineReceivers      =  getWineReceivers commandActorRef
+        let categoryReceivers  =  getCategoryReceivers commandActorRef
         
         this.AddSingleton(cartReceiver)      |> ignore
-        this.AddSingleton(commandAgent)      |> ignore
         this.AddSingleton(userReceivers)     |> ignore
         this.AddSingleton(wineReceivers)     |> ignore
         this.AddSingleton(categoryReceivers) |> ignore
 
+
+// ---------------------------------
+// Configure SignalR mapping
+// ---------------------------------
+
+let configureSingalR (routes: HubRouteBuilder) = routes.MapHub<WineHub>("/hubs/wine")
 
 // ---------------------------------
 // Web app
@@ -142,23 +153,25 @@ let configureCors (builder : CorsPolicyBuilder) =
     builder.WithOrigins([| "http://localhost:8080"; "http://localhost:4200" |])
            .AllowAnyMethod()
            .AllowAnyHeader()
+           .AllowCredentials()
            |> ignore
 
 let configureApp (app : IApplicationBuilder) =
+    sp <- app.ApplicationServices
+
     do app.UseCors(configureCors)
           .UseStaticFiles()
           .UseAuthentication()
+          .UseSignalR(Action<HubRouteBuilder> configureSingalR) 
           .UseGiraffeErrorHandler(errorHandler)
           .UseGiraffe(webApp)
 
-let configureServices (services : IServiceCollection) = 
-    let sp = services.BuildServiceProvider()
-    let env = sp.GetService<IHostingEnvironment>()
-    
-    services.AddCors()              |> ignore
-    services.AddAuth()              |> ignore
-    services.AddGiraffe()           |> ignore
-    services.AddWineryServices(env) |> ignore
+let configureServices (services : IServiceCollection) =     
+    services.AddCors()           |> ignore
+    services.AddAuth()           |> ignore
+    services.AddGiraffe()        |> ignore
+    services.AddSignalR()        |> ignore
+    services.AddWineryServices() |> ignore
 
 let configureLogging (builder : ILoggingBuilder) =
     let filter (l : LogLevel) = l.Equals LogLevel.Error
@@ -174,8 +187,9 @@ let main _ =
         .UseKestrel()
         .UseIISIntegration()
         .UseWebRoot(webRoot)
-        .Configure(Action<IApplicationBuilder> configureApp)
+        .UseEnvironment("Development")
         .ConfigureServices(configureServices)
+        .Configure(Action<IApplicationBuilder> configureApp)
         .ConfigureLogging(configureLogging)
         .Build()
         .Run()

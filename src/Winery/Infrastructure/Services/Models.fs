@@ -2,8 +2,6 @@ module Services.Models
 
 open Winery
 open System
-open System.Threading.Tasks
-
 
 type ResultStatus = 
     | NotCompleted
@@ -14,42 +12,34 @@ type ResultStatus =
 type CommandID = CommandID of Guid
 type CommandMessage = Message of string
 
-type Command = 
-    { id: CommandID;
-      time: DateTime;
-      mutable resultMessage: string;
-      mutable resultStatus: ResultStatus; }
-
-type Envelope<'T> = 
-    { id: Guid;
-      message: 'T;
-      time: DateTime; }
-
-type CommandResult = 
-    { id: Guid
-      message: string
-      result: ResultStatus }   
-
-type CommandAction = 
-    | CommandReceived of Command
-    | CommandCompleted of CommandID * CommandMessage * ResultStatus
-    | CommandStatusRequest of CommandID
-    
-type CommandAgent = { checkStatus : CommandID -> Task<CommandResult option> }
-
 type AuthService =
     { hashPassword: string -> string 
       verify: string * string -> bool }
 
 type CategoryCommand = 
-    | AddCategory    of categoryId : CategoryID * newCategory : NewCategory 
-    | UpdateCategory of categoryId : CategoryID * editCategory : EditCategory 
-    | DeleteCategory of categoryId : CategoryID
+    | AddCategory    of CategoryID * NewCategory 
+    | UpdateCategory of CategoryID * EditCategory 
+    | DeleteCategory of CategoryID
+    with override this.ToString() = this |> function AddCategory _ -> "AddCategory" | UpdateCategory _ -> "UpdateCategory" | DeleteCategory _ -> "DeleteCategory"
 
 type WineCommand =
-    | AddWine    of categoryId : CategoryID * wineId : WineID * newWine : NewWine
-    | UpdateWine of wineId : WineID * editWine : EditWine
-    | DeleteWine of wineId : WineID
+    | AddWine    of CategoryID * WineID * NewWine
+    | UpdateWine of WineID * EditWine
+    | DeleteWine of WineID
+    with override this.ToString() = this |> function AddWine _ -> "AddWine" | UpdateWine _ -> "UpdateWine" | DeleteWine _ -> "DeleteWine"
+
+type UserCommand =
+    | AddUser     of UserID * NewUser * Password
+    | UpdateUser  of UserID * EditUser
+    | AddUserRole of UserID * UserRole 
+    with override this.ToString() = this |> function AddUser _ -> "AddUser" | UpdateUser _ -> "UpdateUser" | AddUserRole _ -> "AddUserRole"
+
+type SystemCommand =
+    | WineCommand     of WineCommand
+    | CartCommand     of CartAction
+    | UserCommand     of UserCommand
+    | CategoryCommand of CategoryCommand
+    with override this.ToString() = this |> function WineCommand c -> string c | CartCommand c -> string c | UserCommand c -> string c | CategoryCommand c -> string c
 
 type CategoryCommandReceivers = 
     { addCategory      : CategoryID * NewCategory -> CommandID 
@@ -67,16 +57,26 @@ type UserCommandReceivers =
 
 type CartCommandReceiver = CartAction -> CommandID
 
+type CommandResult = 
+    { id: Guid
+      message: string
+      result: ResultStatus }   
+
+type Envelope<'T> = 
+    { id: Guid;
+      time: DateTime; 
+      message: 'T }
+
+type CommandAction = 
+    | CommandReceived of Envelope<SystemCommand>
+    | CommandCompleted of CommandID * CommandMessage * ResultStatus    
 
 let envelopeWithDefaults message = 
     { id = Guid.NewGuid();
       message = message; 
       time = DateTime.UtcNow; } 
-
-let commandDefaultFromEnvelope (envelope: Envelope<_>) =
-    { id = CommandID envelope.id;
-      time = envelope.time
-      resultMessage = "";
-      resultStatus = NotCompleted }
-
-let commandEnvelopeReveived m = CommandReceived << commandDefaultFromEnvelope <| m
+      
+let copyEnvelope message envelope =
+    { id = envelope.id
+      message = message
+      time = envelope.time }

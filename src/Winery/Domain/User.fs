@@ -58,6 +58,7 @@ type CartAction =
 | AddItem of UserID * CartItem 
 | UpdateQuantity of UserID * ItemID * uint16
 | RemoveItem of UserID * ItemID
+with override this.ToString() = this |> function AddItem _ -> "AddItem" | UpdateQuantity _ -> "UpdateQuantity" | RemoveItem _ -> "RemoveItem"
 
 
 ///////////////////////////////////////////////////

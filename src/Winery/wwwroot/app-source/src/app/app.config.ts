@@ -1,5 +1,6 @@
 const domain = 'http://localhost:5000'
 export const api = {
+    wineHub: `${domain}/hubs/wine`,
     login: `${domain}/api/auth/login`,
     signUp: `${domain}/api/auth/signup`,
     categories: `${domain}/api/categories`,

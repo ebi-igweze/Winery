@@ -28,22 +28,9 @@ let putUserInfo userId: HttpHandler =
             let getUser = userQuery.getUser >> function | Some (user, _) -> Some user | _ -> None
             let updateUser = editUser getUser receivers.updateUser  
             return! (handleCommand next ctx <<  updateUser <| (UserID userId, editUserInfo))
-
         }
-
-let checkCommandStatus commandId: HttpHandler = 
-    fun (next: HttpFunc) (ctx: HttpContext) ->
-        task {
-            let commandAgent = ctx.GetService<CommandAgent>()
-            let! commandStatus = commandAgent.checkStatus (CommandID commandId)
-            return! commandStatus |> function
-                | Some command -> json ({ status = string command.result; result = command }) next ctx
-                | None         -> badRequestM "No operation found." next ctx
-        }
-
 
 let userHttpHandlers: HttpHandler = 
     (choose [
         routeCif "/users/%O" putUserInfo
-        routeCif "/commandStatus/%O" checkCommandStatus
     ])

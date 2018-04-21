@@ -67,7 +67,7 @@ let postCategory: HttpHandler =
     fun (next: HttpFunc) (ctx: HttpContext) ->
         task {
             let! newCategory = ctx.BindJsonAsync<NewCategory>()
-            let queries = ctx.GetService<CategoryQueries>()
+            let queries = ctx.GetService<CategoryQueries>() 
             let commandReceivers = ctx.GetService<CategoryCommandReceivers>()
             return! (handleCommand next ctx << addCategory queries.getCategoryByName commandReceivers.addCategory <| (fakeAdmin, newCategory))
         }

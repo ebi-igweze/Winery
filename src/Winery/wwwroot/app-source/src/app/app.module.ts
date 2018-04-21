@@ -22,6 +22,7 @@ import { PopupService } from './shared/services/popup.service';
 import { WineService } from './shared/services/wine.service';
 import { ProcessorService } from './shared/services/processor.service';
 import { RouteparamsService } from './shared/services/routeparams.service';
+import { WinehubService } from './shared/services/winehub.service';
 
 const $TokenInterceptor = { provide: HTTP_INTERCEPTORS, useClass: TokenInterceptor, multi: true };
 
@@ -38,7 +39,7 @@ const $TokenInterceptor = { provide: HTTP_INTERCEPTORS, useClass: TokenIntercept
             }
         }),
     ],
-    providers: [ AuthService, UserService, $TokenInterceptor, WineService, CategoryService, PopupService, ProcessorService, RouteparamsService ],
+    providers: [ AuthService, UserService, $TokenInterceptor, WineService, CategoryService, PopupService, ProcessorService, RouteparamsService, WinehubService ],
     bootstrap: [ AppComponent ]
 })
 export class AppModule { }

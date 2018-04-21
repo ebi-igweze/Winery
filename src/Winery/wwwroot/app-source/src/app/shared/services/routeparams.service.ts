@@ -10,7 +10,6 @@ export class RouteparamsService {
 
     public setRouteParam(key: string, value: string) {
         this.route[key] = value;
-        console.log('setting', key, value)
         this.onroutechange.next(this.route);    
     }
 
