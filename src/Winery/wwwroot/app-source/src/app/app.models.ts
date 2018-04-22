@@ -38,6 +38,14 @@ export class WineInventory extends Wine {
     quantity: number
 }
 
+type ResultStatus = { case: 'Failure' | 'Success' }
+
+export type CommandResult = {
+    id: string,
+    message: string,
+    result: ResultStatus   
+}
+
 // declare global {
 //     interface Object {
 //         update: (item: Object) => void;

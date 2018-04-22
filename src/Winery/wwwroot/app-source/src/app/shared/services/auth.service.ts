@@ -64,9 +64,12 @@ export class AuthService {
 export class TokenInterceptor implements HttpInterceptor {
 
     public intercept(req: HttpRequest<any>, next: HttpHandler): Observable<any> {
+        let header = { 'Authorization': `Bearer ${localStorage.getItem(keys.token)}`}
+        let clone = req.clone({setHeaders: header});
+        
         // get observable response
-        let observable = next.handle(req);
-
+        let observable = next.handle(clone);
+        
         // catch all exceptions
         observable.do(res => console.log("Success: ", res), err => console.log("Error: ", err));
         return observable; 

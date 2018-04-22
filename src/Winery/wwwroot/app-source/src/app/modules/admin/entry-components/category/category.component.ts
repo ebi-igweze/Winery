@@ -5,6 +5,7 @@ import { Category } from '../../../../app.models';
 import { copy } from '../../../../app.config';
 import { CategoryService } from '../../../../shared/services/category.service';
 import { ProcessorService } from '../../../../shared/services/processor.service';
+import { HttpErrorResponse } from '@angular/common/http';
 
 @Component({
     selector: '.app-category',
@@ -14,7 +15,9 @@ import { ProcessorService } from '../../../../shared/services/processor.service'
 export class CategoryComponent extends Popup implements OnInit {
     private type: 'add' | 'edit' = 'add';
     private category: Category;
-    private categoryForm = { 
+    public errorMsg:string;
+    public processing = false;
+    public categoryForm = { 
         name: null, 
         description: null, 
         isValid: function() { return this.name && this.description && this.name !== this.description; }
@@ -33,24 +36,35 @@ export class CategoryComponent extends Popup implements OnInit {
     }
 
     public saveChanges(): void {
-        this.hidePopup();
         if (this.type === 'add') this.addInfo();
         else this.editInfo();
     }
 
     private addInfo(): void {
-        // let promise = this.cs.addCategory(this.categoryForm);
-        // promise.then(console.log);
-        this.processor.start('Adding new wine category');
-        setTimeout(() => this.processor.stop('Category added sucessfully'), 5000)
+        this.processing = true;
+        this.cs.addCategory(this.categoryForm)
+        .then(this.handleSuccess)
+        .catch(this.handleError);
     }
 
     private editInfo(): void {
+        this.processing = true;
         // only update the changes that have been made
         let name = this.category.name === this.categoryForm.name ? null : this.categoryForm.name;
         let description = this.category.description === this.categoryForm.description ? null : this.categoryForm.description;
         let info = { name: name, description: description };
-        let promise = this.cs.editCategory(this.category.id, info);
-        promise.then(console.log);
+        this.cs.editCategory(this.category.id, info)
+        .then(this.handleSuccess)
+        .catch(this.handleError);
+    }
+    
+    public handleSuccess = () => {
+        this.processing = false;
+        this.hidePopup();
+    }
+
+    public handleError = (err: HttpErrorResponse) => {
+        this.processing = false;
+        this.errorMsg = err.error
     }
 }

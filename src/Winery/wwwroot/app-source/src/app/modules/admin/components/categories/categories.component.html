@@ -15,54 +15,14 @@
                 </tr>
             </thead>
             <tbody>
-                <tr *ngFor="let category of categories">
-                    <th scope="row">1</th>
+                <tr *ngFor="let category of cs.categories; let i = index">
+                    <th scope="row" [innerHtml]="i + 1"></th>
                     <td [innerText]="category.name"></td>
                     <td [innerText]="category.description"></td>
                     <td><a [routerLink]="[category.id, 'wines']" [innerText]="category.wines.length"></a></td>
                     <td>
                         <a href="#0" psLink="category" [params]="{ 'type': 'edit', 'category': category }">Edit</a> |
-                        <a href="#0">Delete</a>
-                    </td>
-                </tr>
-                <tr>
-                    <th scope="row">2</th>
-                    <td>Jacob</td>
-                    <td>Thornton</td>
-                    <td>@fat</td>
-                    <td>
-                        <a href="#0" data-toggle="modal" data-target="#exampleModal">Edit</a> |
-                        <a href="#0">Delete</a>
-                    </td>
-                </tr>
-                <tr>
-                    <th scope="row">3</th>
-                    <td>Larry</td>
-                    <td>the Bird</td>
-                    <td>@twitter</td>
-                    <td>
-                        <a href="#0" data-toggle="modal" data-target="#exampleModal">Edit</a> |
-                        <a href="#0">Delete</a>
-                    </td>
-                </tr>
-                <tr>
-                    <th scope="row">4</th>
-                    <td>Larry</td>
-                    <td>the Bird</td>
-                    <td>@twitter</td>
-                    <td>
-                        <a href="#0" data-toggle="modal" data-target="#exampleModal">Edit</a> |
-                        <a href="#0">Delete</a>
-                    </td>
-                </tr>
-                <tr>
-                    <th scope="row">5</th>
-                    <td>Larry</td>
-                    <td>the Bird</td>
-                    <td>@twitter</td>
-                    <td>
-                        <a href="#0" data-toggle="modal" data-target="#exampleModal">Edit</a> |
-                        <a href="#0">Delete</a>
+                        <a href="#0" (click)="deleteCategory(category, $event)">Delete</a>
                     </td>
                 </tr>
             </tbody>

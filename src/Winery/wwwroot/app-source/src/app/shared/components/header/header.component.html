@@ -20,7 +20,21 @@
                 </ng-container>        
                 <ng-container *ngIf="user.status === 1 && user.isAdmin">        
                     <li class="nav-item">
-                        <a class="nav-link" routerLink="/admin">Admin</a>
+                        <div class="dropdown">
+                            <a href="#0" class="nav-link dropdown-toggle" id="cart" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                Admin
+                            </a>
+                            <div class="dropdown-menu dropdown-menu-right p-0" aria-labelledby="cart">
+                                <ul class="list-group">
+                                    <li class="list-group-item">
+                                        <a routerLink="/admin/categories" class="mb-1">Categories</a>
+                                    </li>
+                                    <li class="list-group-item">
+                                        <a routerLink="/admin/wines" class="mb-1">Wines</a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
                     </li>
                 </ng-container>
                 <ng-container *ngIf="user.status === -1">

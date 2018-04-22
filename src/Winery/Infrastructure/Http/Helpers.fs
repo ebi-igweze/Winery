@@ -15,7 +15,7 @@ let created: HttpHandler = setStatusCode 201
 
 let createdM m: HttpHandler = created >=> text m
 
-let accepted (refId : Guid) : HttpHandler = setStatusCode 202 >=> json ({ href = sprintf "/api/commandStatus/%O" refId })
+let accepted (refId : Guid) : HttpHandler = setStatusCode 202 >=> json ({ href = refId.ToString "N" })
 
 let noContent: HttpHandler = setStatusCode 204
 

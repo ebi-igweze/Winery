@@ -1,4 +1,4 @@
-import { Component, AfterViewInit } from '@angular/core';
+import { Component } from '@angular/core';
 import { WinehubService } from './shared/services/winehub.service';
 
 @Component({
@@ -6,11 +6,6 @@ import { WinehubService } from './shared/services/winehub.service';
     templateUrl: './app.component.html',
     styles: []
 })
-export class AppComponent implements AfterViewInit {
-    
-    constructor(private wineHub: WinehubService) {}
+export class AppComponent {
 
-    public ngAfterViewInit(): void {
-        this.wineHub.severSend("Message from browser")
-    }
 }

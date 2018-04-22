@@ -1,6 +1,7 @@
 module Services.Actors.Storage
 
 open Akka.FSharp
+open Winery
 open Storage
 open Services.Models
 open Services.Actors.User
@@ -29,29 +30,35 @@ let wineActor (executioners: WineCommandExecutioners) (mailbox: Actor<_>) =
 
 let getWineReceivers commandActor: WineCommandReceivers = {
     addWine = fun args ->  
-        let command = envelopeWithDefaults (WineCommand (AddWine args))
+        let (_, WineID id, _) = args
+        let command = envelopeWithId id (WineCommand (AddWine args))
         commandActor <! CommandReceived command
         CommandID command.id
     deleteWine = fun args ->
-        let command = envelopeWithDefaults (WineCommand (DeleteWine args))
+        let (WineID id) = args
+        let command = envelopeWithId id (WineCommand (DeleteWine args))
         commandActor <! CommandReceived command
         CommandID command.id
     updateWine = fun args ->
-        let command = envelopeWithDefaults (WineCommand (UpdateWine args))
+        let (WineID id, _) = args
+        let command = envelopeWithId id (WineCommand (UpdateWine args))
         commandActor <! CommandReceived command
         CommandID command.id }
 
 let getCategoryReceivers commandActor: CategoryCommandReceivers = {
     addCategory = fun args ->
-        let command = envelopeWithDefaults (CategoryCommand (AddCategory args))
+        let (CategoryID id, _) = args
+        let command = envelopeWithId id (CategoryCommand (AddCategory args))
         commandActor <! CommandReceived command
         CommandID command.id
     deleteCategory = fun args ->
-        let command = envelopeWithDefaults (CategoryCommand (DeleteCategory args))
+        let (CategoryID id) = args
+        let command = envelopeWithId id (CategoryCommand (DeleteCategory args))
         commandActor <! CommandReceived command
         CommandID command.id
     updateCategory = fun args ->
-        let command = envelopeWithDefaults (CategoryCommand (UpdateCategory args))
+        let (CategoryID id, _) = args
+        let command = envelopeWithId id (CategoryCommand (UpdateCategory args))
         commandActor <! CommandReceived command
         CommandID command.id    }
 

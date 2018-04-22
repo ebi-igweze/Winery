@@ -1,4 +1,5 @@
 import { Injectable } from '@angular/core';
+import { CommandResult } from '../../app.models';
 
 
 export type ProcessStatus = 'InProgress' | 'Failure' | 'Success';
@@ -43,16 +44,19 @@ export class ProcessorService {
         this.container.style.display = 'block';
         this.child.innerText = process+'...';
         this.child.classList.add('bg-warning');
+        // remove all command-complete classes
         this.child.classList.remove('bg-success');
+        this.child.classList.remove('bg-alert');
         this.child.classList.remove('text-white');
     }
 
-    public stop(message: string): void {
-        this.child.classList.add('bg-success');
+    public complete(commandResult: CommandResult): void {
+        let newclass = commandResult.result.case === "Failure" ? 'bg-alert' : 'bg-success';
+        this.child.classList.add(newclass);
         this.child.classList.add('text-white');
         this.child.classList.remove('bg-warning');
-        this.child.innerText = message;
-        setTimeout(() => this.container.style.display = 'none', 3000);
+        this.child.innerText = commandResult.message;
+        setTimeout(() => this.container.style.display = 'none', 5000);
     }
 
 }

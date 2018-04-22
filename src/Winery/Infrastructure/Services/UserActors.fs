@@ -75,15 +75,21 @@ let commandActor userActorRef cartActorRef wineActorRef categoryActorRef (mailbo
 
 let getUserReceivers commandActor: UserCommandReceivers = {
     addUser = fun args ->
-        let command = envelopeWithDefaults (UserCommand (AddUser args))
+        let (UserID id, _, _) = args
+        let command = envelopeWithId id (UserCommand (AddUser args))
         commandActor <! CommandReceived command
         CommandID command.id
     updateUser = fun args ->
-        let command = envelopeWithDefaults (UserCommand (UpdateUser args))
+        let (UserID id, _) = args
+        let command = envelopeWithId id (UserCommand (UpdateUser args))
         commandActor <! CommandReceived command
         CommandID command.id }
 
 let getCartReceiver commandActor: CartCommandReceiver = fun args -> 
-    let command = envelopeWithDefaults (CartCommand args)
+    let id = args |> function
+        | RemoveItem (_, ItemID id) -> id
+        | AddItem (_, cartItem) -> cartItem.id
+        | UpdateQuantity (_, ItemID id, _)  -> id
+    let command = envelopeWithId id (CartCommand args)
     commandActor <! CommandReceived command
     CommandID command.id

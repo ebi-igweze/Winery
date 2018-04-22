@@ -4,10 +4,9 @@ open Winery
 open System
 
 type ResultStatus = 
-    | NotCompleted
     | Success 
     | Failure with
-    override this.ToString () = this |> function | Success -> "SUCCESS" | Failure -> "FAILURE" | NotCompleted -> "NOTCOMPLETED"
+    override this.ToString () = this |> function | Success -> "SUCCESS" | Failure -> "FAILURE"
 
 type CommandID = CommandID of Guid
 type CommandMessage = Message of string
@@ -71,10 +70,10 @@ type CommandAction =
     | CommandReceived of Envelope<SystemCommand>
     | CommandCompleted of CommandID * CommandMessage * ResultStatus    
 
-let envelopeWithDefaults message = 
-    { id = Guid.NewGuid();
-      message = message; 
-      time = DateTime.UtcNow; } 
+let envelopeWithId id message =
+    { id = id
+      message = message
+      time = DateTime.UtcNow }
       
 let copyEnvelope message envelope =
     { id = envelope.id

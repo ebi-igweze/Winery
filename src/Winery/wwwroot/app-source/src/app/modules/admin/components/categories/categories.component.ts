@@ -9,13 +9,15 @@ import { CategoryComponent } from '../../entry-components/category/category.comp
     templateUrl: './categories.component.html',
     styles: []
 })
-export class CategoriesComponent implements OnInit {
-    private categories: Category[];
+export class CategoriesComponent {
     public states: PopupStates = [{name: 'category', component: CategoryComponent, selectors: ['category-item']}]
 
     constructor(private cs: CategoryService) { }
 
-    public ngOnInit(): void {
-        this.cs.getCategories().then(c => this.categories = c);
+    public deleteCategory(category: Category, evt): void {
+        let message = `Are you sure you want to delete this category: '${category.name}'`;
+        if (confirm(message)) this.cs.deleteCategory(category.id); 
+
+        evt.preventDefault();
     }
 }
