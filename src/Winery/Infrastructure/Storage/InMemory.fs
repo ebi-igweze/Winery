@@ -228,6 +228,7 @@ let private updateWine =
         if (editWine.price.IsSome) then wine.price <- editWine.price.Value
         if (editWine.year.IsSome) then wine.year <- editWine.year.Value
         if (editWine.categoryID.IsSome) then wine.categoryId <- editWine.categoryID.Value
+        if (editWine.imagePath.IsSome) then wine.imagePath <- editWine.imagePath.Value
         
     fun (wineId, editWine) ->
         wineId

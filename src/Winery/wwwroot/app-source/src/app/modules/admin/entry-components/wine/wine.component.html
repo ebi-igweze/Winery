@@ -10,36 +10,41 @@
             <div class="row">
                 <div class="col-md-12">
                     <div class="row">
+                        <div class="col-md-12">
+                            <div *ngIf="errorMsg" class="alert alert-warning alert-dismissible fade show" role="alert">
+                                <strong>Error!</strong> <span [innerText]="errorMsg"></span>.
+                            </div>                        
+                        </div>
                         <div class="col-md-6">
                             <div class="form-group">
                                 <label for="itemName">Name</label>
-                                <input type="text" name="name" [(ngModel)]="wineForm.name" class="form-control" id="itemName" placeholder="Enter Name" />
+                                <input type="text" name="name" [(ngModel)]="wineForm.name" class="form-control" id="itemName" placeholder="Enter Name" required/>
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="form-group">
                                 <label for="year">Year Produced</label>
-                                <input type="number" name="year" [(ngModel)]="wineForm.year" class="form-control" id="year" min="1920" max="2018" placeholder="Year produced" />
+                                <input type="number" name="year" [(ngModel)]="wineForm.year" class="form-control" id="year" min="1920" max="2018" placeholder="Year produced" required />
                             </div>
                         </div>
                     </div>
 
                     <div class="form-group">
                         <label for="itemDescription">Description</label>
-                        <textarea class="form-control" name="description" [(ngModel)]="wineForm.description" id="itemDescription" placeholder="Enter Description"></textarea>
+                        <textarea class="form-control" name="description" [(ngModel)]="wineForm.description" id="itemDescription" placeholder="Enter Description" required></textarea>
                     </div>
                     <div class="row">
                         <div class="col-md-6">
                             <div class="form-group">
                                 <label for="price">Price</label>
-                                <input type="number"  name="price" [(ngModel)]="wineForm.price" class="form-control" id="price" min="1920" max="2018" placeholder="Price of Wine" />
+                                <input type="number"  name="price" [(ngModel)]="wineForm.price" class="form-control" id="price" min="1" placeholder="Price of Wine" required />
                             </div>
                         </div>
 
                         <div class="col-md-6">
                             <div class="form-group">
                                 <label for="categorySelect">Select category</label>
-                                <select class="form-control" id="categorySelect" name="category" [(ngModel)]="category">
+                                <select class="form-control" id="categorySelect" name="category" [(ngModel)]="category" required>
                                     <option value="">Select a Category</option>
                                     <option *ngFor="let c of categories" [value]="c.id" [innerText]="c.name"></option>
                                 </select>
@@ -56,13 +61,14 @@
                         <div class="col-md-6">
                             <div class="form-group">
                                 <label for="imageSelect">Image select</label>
-                                <select class="form-control" id="imageSelect"  name="imagePath" [(ngModel)]="wineForm.imagePath">
-                                    <option value="img/red-wine.png">Red Wine</option>
-                                    <option value="img/rose-wine.png">Rose Wine</option>
-                                    <option value="img/white-wine.png">White Wine</option>
-                                    <option value="img/sparkling-wine.png">Sparkling Wine</option>
-                                    <option value="img/pink-rose-wine.png">Pink-Rose Wine</option>
-                                    <option value="img/distilled-wine.png">Distilled Wine</option>
+                                <select class="form-control" id="imageSelect"  name="imagePath" [(ngModel)]="wineForm.imagePath" required>
+                                    <option value="">Choose Image</option>
+                                    <option value="assets/img/red-wine.jpg">Red Wine</option>
+                                    <option value="assets/img/rose-wine.png">Rose Wine</option>
+                                    <option value="assets/img/white-wine.png">White Wine</option>
+                                    <option value="assets/img/sparkling-wine.png">Sparkling Wine</option>
+                                    <option value="assets/img/pink-rose-wine.png">Pink-Rose Wine</option>
+                                    <option value="assets/img/distilled-wine.png">Distilled Wine</option>
                                 </select>
                             </div>
                         </div>
@@ -71,7 +77,7 @@
             </div>
         </div>
         <div class="modal-footer">
-            <button type="button" class="btn btn-primary" [disabled]="form.invalid || !wineForm.isValid()" (click)="saveChanges()">Save changes</button>
+            <button type="button" class="btn btn-primary" [disabled]="form.invalid || !wineForm.isValid() || processing" (click)="saveChanges()">Save changes</button>
             <button type="button" class="btn btn-secondary" (click)="hidePopup()">Close</button>
         </div>
     </div>

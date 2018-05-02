@@ -28,7 +28,17 @@ let getWines categoryId: HttpHandler =
                     | None -> notFound next ctx
         }
 
-let getWine (categoryStringId: string, idString: string) =
+let getWine (wineId: Guid) =
+    fun (next: HttpFunc) (ctx: HttpContext) ->
+        task {
+            let queries = ctx.GetService<WineQueries>()
+            let response = queries.getWineById (WineID wineId)
+            return! match response with
+                    | Some w -> json w next ctx
+                    | None   -> notFound next ctx
+        }
+
+let getWineInCategory (categoryStringId: string, idString: string) =
     fun (next: HttpFunc) (ctx: HttpContext) ->
         task {
             let categoryId, id = Guid categoryStringId, Guid idString
@@ -116,9 +126,10 @@ let wineHttpHandlers: HttpHandler =
     (choose [
         GET >=> choose [
             routeCi  "/categories/wines/all" >=> getAllWines
+            routeCif "/categories/wines/all/%O" getWine
             routeCif "/categories/%O/wines" getWines
             routeCif "/categories/%s/wines/search" getWineName
-            routeCif "/categories/%s/wines/%s" getWine
+            routeCif "/categories/%s/wines/%s" getWineInCategory
         ]
         POST    >=> routeCif "/categories/%s/wines" (authorizeAdminWithArgs << postWine)
         PUT     >=> routeCif "/categories/%s/wines/%s" (authorizeAdminWithArgs << putWine)

@@ -100,7 +100,7 @@ type IServiceCollection with
         let userActorRef     = spawn system "userActor" (userActor userCommandExecutioners)
         let cartActorRef     = spawn system "cartActor" (cartActor cartCommandExecutioner)
         let categoryActorRef = spawn system "categoryActor" (categoryActor categoryCommandExecutioners)
-        let commandActorRef  = spawn system "commandActor" (commandActor userActorRef wineActorRef cartActorRef categoryActorRef)
+        let commandActorRef  = spawn system "commandActor" (commandActor userActorRef cartActorRef wineActorRef categoryActorRef)
 
         // actor message receivers
         let cartReceiver       =  getCartReceiver commandActorRef

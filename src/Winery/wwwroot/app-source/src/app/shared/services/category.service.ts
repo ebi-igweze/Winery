@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { api } from '../../app.config';
-import { Category, Command } from '../../app.models';
+import { Category, Command, CommandResult } from '../../app.models';
 import { ProcessorService } from './processor.service';
 import { WinehubService, CommandKeys } from './winehub.service';
 
@@ -35,32 +35,35 @@ export class CategoryService {
     }
 
     private completeProcess(process: CommandKeys) {
-        console.log('register complete process')
         let sub = this.winehub.on(process).subscribe(result => {
             this.processor.complete(result);
-            console.log('complete process done.')
             sub.unsubscribe(); 
         });
+    }
+
+    private error(error: HttpErrorResponse): CommandResult {
+        console.log(error)
+        return {id: null, result: {case: 'Failure'}, message: (error.error || error.message)}
     }
 
     public addCategory(info: CategoryInfo): Promise<Command> {
         this.processor.start('Adding new wine category');
         let promise = this.http.post<Command>(api.categories, info).toPromise();
-        promise.then(() => this.completeProcess('AddCategory'));
+        promise.then(() => this.completeProcess('AddCategory'), err => this.processor.complete(this.error(err)));
         return promise;
     }
 
     public editCategory(id: string, info: CategoryInfo): Promise<Command> {
         this.processor.start('Editing wine category');
         let promise = this.http.put<Command>(api.categories+'/'+id, info).toPromise();
-        promise.then(() => this.completeProcess('UpdateCategory'));
+        promise.then(() => this.completeProcess('UpdateCategory'), err => this.processor.complete(this.error(err)));
         return promise;
     }
 
     public deleteCategory(id: string): Promise<Command> {
         this.processor.start('Deleting wine category');
         let promise = this.http.delete<Command>(api.categories+'/'+id).toPromise();
-        promise.then(() => this.completeProcess('DeleteCategory'));
+        promise.then(() => this.completeProcess('DeleteCategory'), err => this.processor.complete(this.error(err)));
         return promise;
     }
 
@@ -84,5 +87,4 @@ export class CategoryService {
 
     private delete = (id: string) => this.getCategory(id).then(c => this.categories.splice(this.categories.indexOf(c), 1));
     
-
 }

@@ -19,7 +19,7 @@
                     <th scope="row" [innerHtml]="i + 1"></th>
                     <td [innerText]="category.name"></td>
                     <td [innerText]="category.description"></td>
-                    <td><a [routerLink]="[category.id, 'wines']" [innerText]="category.wines.length"></a></td>
+                    <td><a [routerLink]="[category.id, 'wines']">view wines</a></td>
                     <td>
                         <a href="#0" psLink="category" [params]="{ 'type': 'edit', 'category': category }">Edit</a> |
                         <a href="#0" (click)="deleteCategory(category, $event)">Delete</a>

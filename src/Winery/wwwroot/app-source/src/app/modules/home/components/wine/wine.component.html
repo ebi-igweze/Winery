@@ -3,7 +3,7 @@
     <div class="col-lg-4 col-md-6 mb-4" *ngFor="let wine of wines">
         <div class="card h-100">
             <a href="#" [routerLink]="['/categories', wine.categoryID, 'wines', wine.id, 'details']" class="shop-item">
-                <img class="card-img-top" src="assets/img/rose-wine.png" alt="wine image">
+                <img class="card-img-top" [src]="wine.imagePath" alt="wine image">
             </a>
             <div class="card-body">
                 <h4 class="card-title">
